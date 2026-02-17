@@ -37,25 +37,49 @@ model Admin {
 }
 
 model Driver {
-  id        String        @id @default(uuid())
-  firstName String
-  lastName  String
-  email     String        @unique
-  phone     String        @unique
-  password  String
-  status    AccountStatus @default(ACTIVE)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id           String        @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String        @unique
+  phone        String        @unique
+  password     String
+  status       AccountStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  appointments Appointment[]
 }
 
 model Garage {
-  id        String         @id @default(uuid())
-  name      String
-  email     String         @unique
-  phone     String         @unique
-  password  String
-  status    AccountStatus @default(PENDING)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  phone         String         @unique
+  password      String
+  status        AccountStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  appointments  Appointment[]
+}
+
+enum AppointmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  IN_SERVICE
+  COMPLETED
+  CANCELLED
+}
+
+model Appointment {
+  id                 String            @id @default(uuid())
+  driverId           String
+  garageId           String
+  scheduledAt        DateTime
+  serviceDescription String
+  status             AppointmentStatus @default(PENDING)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  driver             Driver            @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  garage             Garage            @relation(fields: [garageId], references: [id], onDelete: Cascade)
 }
 

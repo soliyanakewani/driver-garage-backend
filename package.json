@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/main/server.ts",
     "build": "tsc",
-    "start": "node dist/main/index.js"
+    "start": "node dist/main/index.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push"
   },
   "repository": {
     "type": "git",
