@@ -59,6 +59,31 @@ model Garage {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   appointments  Appointment[]
+  availabilitySlots GarageAvailabilitySlot[]
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model GarageAvailabilitySlot {
+  id          String    @id @default(uuid())
+  garageId    String
+  dayOfWeek   DayOfWeek
+  startMinute Int
+  endMinute   Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  garage      Garage    @relation(fields: [garageId], references: [id], onDelete: Cascade)
+
+  @@index([garageId, dayOfWeek])
 }
 
 enum AppointmentStatus {

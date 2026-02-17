@@ -1,6 +1,8 @@
 import { prisma } from '../../../../infrastructure/prisma/prisma.client';
 import { Appointment, AppointmentStatus } from '../../domain/entities/appointment.entity';
 import { IAppointmentRepository } from '../../domain/repositories/appointment.repository.interface';
+import { PrismaGarageAvailabilityRepository } from '../../../garage/availability/infrastructure/repositories/prisma-availability.repository';
+import { DayOfWeek } from '../../../garage/availability/domain/entities/availability-slot.entity';
 
 type PrismaAppointmentStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IN_SERVICE' | 'COMPLETED' | 'CANCELLED';
 
@@ -49,6 +51,26 @@ function mapFromPrisma(model: PrismaAppointment): Appointment {
 const RESCHEDULE_MIN_HOURS_BEFORE = 2;
 
 export class PrismaAppointmentRepository implements IAppointmentRepository {
+  private readonly _availabilityRepository = new PrismaGarageAvailabilityRepository();
+
+  private async _isGarageTimeAlreadyBooked(input: {
+    garageId: string;
+    scheduledAt: Date;
+    excludeAppointmentId?: string;
+  }): Promise<boolean> {
+    const existing = await prisma.appointment.findFirst({
+      where: {
+        garageId: input.garageId,
+        scheduledAt: input.scheduledAt,
+        ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {}),
+        // Consider these as "taking up a slot"
+        status: { in: ['PENDING', 'APPROVED', 'IN_SERVICE'] as any },
+      },
+      select: { id: true },
+    });
+    return Boolean(existing);
+  }
+
   private async _findForDriver(id: string, driverId: string): Promise<PrismaAppointment | null> {
     return (await prisma.appointment.findFirst({ where: { id, driverId } })) as any;
   }
@@ -69,6 +91,22 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
 
     const now = new Date();
     if (input.scheduledAt <= now) throw new Error('Appointment date and time must be in the future');
+
+    // Enforce garage availability slots
+    const { dayOfWeek, minuteOfDay } = this._getDayAndMinute(input.scheduledAt);
+    const withinSlot = await this._availabilityRepository.isTimeWithinAnySlot(
+      input.garageId,
+      dayOfWeek,
+      minuteOfDay
+    );
+    if (!withinSlot) throw new Error('Selected time is not within garage availability slots');
+
+    // Prevent double-booking same garage + same time
+    const isBooked = await this._isGarageTimeAlreadyBooked({
+      garageId: input.garageId,
+      scheduledAt: input.scheduledAt,
+    });
+    if (isBooked) throw new Error('Selected time is already booked for this garage');
 
     const created = await prisma.appointment.create({
       data: {
@@ -116,6 +154,23 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     }
 
     if (newScheduledAt <= now) throw new Error('New date and time must be in the future');
+
+    // Enforce garage availability slots for the new time
+    const { dayOfWeek, minuteOfDay } = this._getDayAndMinute(newScheduledAt);
+    const withinSlot = await this._availabilityRepository.isTimeWithinAnySlot(
+      appointment.garageId,
+      dayOfWeek,
+      minuteOfDay
+    );
+    if (!withinSlot) throw new Error('Selected time is not within garage availability slots');
+
+    // Prevent double-booking when rescheduling
+    const isBooked = await this._isGarageTimeAlreadyBooked({
+      garageId: appointment.garageId,
+      scheduledAt: newScheduledAt,
+      excludeAppointmentId: appointment.id,
+    });
+    if (isBooked) throw new Error('Selected time is already booked for this garage');
 
     const updated = await prisma.appointment.update({
       where: { id },
@@ -220,6 +275,23 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     });
 
     return mapFromPrisma(updated as any);
+  }
+
+  private _getDayAndMinute(date: Date): { dayOfWeek: DayOfWeek; minuteOfDay: number } {
+    // Uses server-local timezone. If you need strict UTC behavior, switch to getUTCHours/getUTCMinutes.
+    const jsDay = date.getDay(); // 0=Sun ... 6=Sat
+    const dayOfWeekMap: Record<number, DayOfWeek> = {
+      0: DayOfWeek.Sunday,
+      1: DayOfWeek.Monday,
+      2: DayOfWeek.Tuesday,
+      3: DayOfWeek.Wednesday,
+      4: DayOfWeek.Thursday,
+      5: DayOfWeek.Friday,
+      6: DayOfWeek.Saturday,
+    };
+    const dayOfWeek = dayOfWeekMap[jsDay];
+    const minuteOfDay = date.getHours() * 60 + date.getMinutes();
+    return { dayOfWeek, minuteOfDay };
   }
 }
 
