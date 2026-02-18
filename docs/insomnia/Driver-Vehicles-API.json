@@ -37,16 +37,29 @@
     },
     {
       "_type": "request",
+      "_id": "req_driver_signup",
+      "name": "1. Driver Signup",
+      "url": "{{ _.base_url }}/drivers/auth/signup",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"Driver\",\n  \"email\": \"testdriver@example.com\",\n  \"phone\": \"+251911234567\",\n  \"password\": \"password123\"\n}"
+      },
+      "parentId": "fld_auth",
+      "description": "Create a driver account first. Then run Driver Login with the same phone and password."
+    },
+    {
+      "_type": "request",
       "_id": "req_driver_login",
-      "name": "Driver Login",
+      "name": "2. Driver Login",
       "url": "{{ _.base_url }}/drivers/auth/login",
       "method": "POST",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"phone\": \"+251911234567\",\n  \"password\": \"your_password\"\n}"
+        "text": "{\n  \"phone\": \"+251911234567\",\n  \"password\": \"password123\"\n}"
       },
       "parentId": "fld_auth",
-      "description": "Login to get JWT. Use the returned token in Authorization header for vehicle requests."
+      "description": "Login to get JWT. Copy the token from the response into driver_token in the environment."
     },
     {
       "_type": "request_group",

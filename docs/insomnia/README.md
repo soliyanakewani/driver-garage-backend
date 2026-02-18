@@ -14,11 +14,12 @@
 
 ## Test order
 
-1. **Driver Login** – sign in with a driver account; copy `token` into `driver_token` in the environment.
-2. **POST Create Vehicle** – create a vehicle; copy `id` into `vehicle_id` if you want to use GET/PUT/DELETE by ID.
-3. **GET List Vehicles** – list all vehicles for the driver.
-4. **GET Vehicle by ID** – get one vehicle (requires `vehicle_id`).
-5. **PUT Update Vehicle** – update that vehicle (requires `vehicle_id`).
-6. **DELETE Vehicle** – delete that vehicle (requires `vehicle_id`).
+1. **1. Driver Signup** – create a driver account (first time only). Use a unique email and phone.
+2. **2. Driver Login** – sign in with the same phone and password; copy `token` from the response into `driver_token` in the environment.
+3. **POST Create Vehicle** – create a vehicle; copy `id` into `vehicle_id` if you want to use GET/PUT/DELETE by ID.
+4. **GET List Vehicles** – list all vehicles for the driver.
+5. **GET Vehicle by ID** – get one vehicle (requires `vehicle_id`).
+6. **PUT Update Vehicle** – update that vehicle (requires `vehicle_id`).
+7. **DELETE Vehicle** – delete that vehicle (requires `vehicle_id`).
 
 All vehicle requests (except Login) need **Authorization**: `Bearer <driver_token>`.
