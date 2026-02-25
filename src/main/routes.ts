@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { verifyDriverJWT } from '../core/middleware/auth/jwt.middleware';
 import adminAuthRoutes from '../modules/admin/auth/routes/auth.routes';
 import driverAuthRoutes from '../modules/driver/auth/routes/auth.routes';
-import driverVehiclesRoutes from '../modules/driver/vehicles/routes/vehicles.routes';
+import driverVehiclesRoutes from '../modules/driver/vehicles/presentation/routes/vehicles.routes';
 import garageAuthRoutes from '../modules/garage/auth/routes/auth.routes';
 
 const rootRouter = Router();
