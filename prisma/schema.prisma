@@ -47,6 +47,24 @@ model Driver {
   status    AccountStatus @default(ACTIVE)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+  vehicles  Vehicle[]
+}
+
+model Vehicle {
+  id         String   @id @default(uuid())
+  driverId   String
+  plateNumber String
+  make       String
+  model      String
+  type       String?  // e.g. sedan, SUV
+  year       Int
+  color      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  driver     Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@unique([driverId, plateNumber])
+  @@index([driverId])
 }
 
 model Garage {
