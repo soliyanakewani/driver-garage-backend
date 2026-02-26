@@ -1,46 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
-
-// Extend Express Request interface to include 'user' property
-declare module 'express-serve-static-core' {
-  interface Request {
-    user?: JwtPayload;
-  }
-}
 import jwt from 'jsonwebtoken';
 
-interface JwtPayload {
-  id: string;
-  role: 'ADMIN' | 'DRIVER' | 'GARAGE';
-}
-
-export const adminAuthMiddleware = (
+export const adminAuthGuard = (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  const token = authHeader.split(' ')[1];
+
   try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET!
-    ) as JwtPayload;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
 
     if (decoded.role !== 'ADMIN') {
-      return res.status(403).json({ error: 'Access denied. Admin only.' });
+      return res.status(403).json({ message: 'Admin access only' });
     }
 
-    req.user = decoded;
-
+    (req as any).admin = decoded;
     next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+  } catch {
+    return res.status(401).json({ message: 'Invalid or expired token' });
   }
-  
 };
