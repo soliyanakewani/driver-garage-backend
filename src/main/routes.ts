@@ -6,6 +6,7 @@ import driverVehiclesRoutes from '../modules/driver/vehicles/presentation/routes
 import garageAuthRoutes from '../modules/garage/auth/routes/auth.routes';
 import adminGarageApprovalRoutes from '../modules/admin/garageApproval/presentation/routes/garage-approval.routes';
 import userManagementRoutes from "../modules/admin/userManagement/presentation/routes/userManagementRoutes" ;
+import educationalContentRoutes from '../modules/admin/educationalContent/presentation/routes/educational-content.routes';
 
 
 const rootRouter = Router();
@@ -15,6 +16,7 @@ rootRouter.use('/drivers/auth', driverAuthRoutes);
 rootRouter.use('/garages/auth', garageAuthRoutes); 
 rootRouter.use('/admin/garages-approval', adminGarageApprovalRoutes);
 rootRouter.use("/admin", userManagementRoutes);
+rootRouter.use('/admin/educational-content', educationalContentRoutes);
 
 
 const driverRouter = Router();
