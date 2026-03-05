@@ -1,0 +1,140 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "resources": [
+    {
+      "_type": "environment",
+      "_id": "env_driver_vehicles",
+      "name": "Driver Vehicles - Local",
+      "data": {
+        "base_url": "http://localhost:4000",
+        "driver_token": "",
+        "vehicle_id": ""
+      },
+      "parentId": null,
+      "isPrivate": false
+    },
+    {
+      "_type": "api_spec",
+      "_id": "spec_driver_vehicles",
+      "parentId": null,
+      "fileName": "Driver Vehicles API"
+    },
+    {
+      "_type": "workspace",
+      "_id": "wrk_driver_vehicles",
+      "name": "Driver Vehicles API",
+      "description": "Driver vehicles endpoints - Yord734",
+      "scope": "collection",
+      "parentId": null
+    },
+    {
+      "_type": "request_group",
+      "_id": "fld_auth",
+      "name": "1. Auth (get token first)",
+      "parentId": "wrk_driver_vehicles",
+      "environmentId": "env_driver_vehicles"
+    },
+    {
+      "_type": "request",
+      "_id": "req_driver_signup",
+      "name": "1. Driver Signup",
+      "url": "{{ _.base_url }}/drivers/auth/signup",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"Driver\",\n  \"email\": \"testdriver@example.com\",\n  \"phone\": \"+251911234567\",\n  \"password\": \"password123\"\n}"
+      },
+      "parentId": "fld_auth",
+      "description": "Create a driver account first. Then run Driver Login with the same phone and password."
+    },
+    {
+      "_type": "request",
+      "_id": "req_driver_login",
+      "name": "2. Driver Login",
+      "url": "{{ _.base_url }}/drivers/auth/login",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"phone\": \"+251911234567\",\n  \"password\": \"password123\"\n}"
+      },
+      "parentId": "fld_auth",
+      "description": "Login to get JWT. Copy the token from the response into driver_token in the environment."
+    },
+    {
+      "_type": "request_group",
+      "_id": "fld_vehicles",
+      "name": "2. Driver Vehicles",
+      "parentId": "wrk_driver_vehicles",
+      "environmentId": "env_driver_vehicles"
+    },
+    {
+      "_type": "request",
+      "_id": "req_create_vehicle",
+      "name": "POST Create Vehicle",
+      "url": "{{ _.base_url }}/driver/vehicles",
+      "method": "POST",
+      "header": [
+        { "name": "Authorization", "value": "Bearer {{ _.driver_token }}", "disabled": false }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"plateNumber\": \"AA-1234-BB\",\n  \"make\": \"Toyota\",\n  \"model\": \"Corolla\",\n  \"type\": \"sedan\",\n  \"year\": 2020,\n  \"color\": \"White\"\n}"
+      },
+      "parentId": "fld_vehicles",
+      "description": "Register a new vehicle. Required: plateNumber, make, model, year. Optional: type, color."
+    },
+    {
+      "_type": "request",
+      "_id": "req_list_vehicles",
+      "name": "GET List Vehicles",
+      "url": "{{ _.base_url }}/driver/vehicles",
+      "method": "GET",
+      "header": [
+        { "name": "Authorization", "value": "Bearer {{ _.driver_token }}", "disabled": false }
+      ],
+      "parentId": "fld_vehicles",
+      "description": "Get all vehicles for the logged-in driver."
+    },
+    {
+      "_type": "request",
+      "_id": "req_get_vehicle",
+      "name": "GET Vehicle by ID",
+      "url": "{{ _.base_url }}/driver/vehicles/{{ _.vehicle_id }}",
+      "method": "GET",
+      "header": [
+        { "name": "Authorization", "value": "Bearer {{ _.driver_token }}", "disabled": false }
+      ],
+      "parentId": "fld_vehicles",
+      "description": "Get a single vehicle. Set vehicle_id in environment after creating a vehicle."
+    },
+    {
+      "_type": "request",
+      "_id": "req_update_vehicle",
+      "name": "PUT Update Vehicle",
+      "url": "{{ _.base_url }}/driver/vehicles/{{ _.vehicle_id }}",
+      "method": "PUT",
+      "header": [
+        { "name": "Authorization", "value": "Bearer {{ _.driver_token }}", "disabled": false }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"color\": \"Black\",\n  \"year\": 2021\n}"
+      },
+      "parentId": "fld_vehicles",
+      "description": "Update vehicle. Send only fields to update."
+    },
+    {
+      "_type": "request",
+      "_id": "req_delete_vehicle",
+      "name": "DELETE Vehicle",
+      "url": "{{ _.base_url }}/driver/vehicles/{{ _.vehicle_id }}",
+      "method": "DELETE",
+      "header": [
+        { "name": "Authorization", "value": "Bearer {{ _.driver_token }}", "disabled": false }
+      ],
+      "parentId": "fld_vehicles",
+      "description": "Delete a vehicle."
+    }
+  ]
+}

@@ -22,6 +22,7 @@ enum Role {
 enum AccountStatus {
   ACTIVE
   PENDING
+  REJECTED
   BLOCKED
   WARNED
 }
@@ -47,6 +48,24 @@ model Driver {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   appointments Appointment[]
+  vehicles  Vehicle[]
+}
+
+model Vehicle {
+  id         String   @id @default(uuid())
+  driverId   String
+  plateNumber String
+  make       String
+  model      String
+  type       String?  // e.g. sedan, SUV
+  year       Int
+  color      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  driver     Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@unique([driverId, plateNumber])
+  @@index([driverId])
 }
 
 model Garage {
@@ -119,5 +138,23 @@ model Appointment {
   updatedAt          DateTime          @updatedAt
   driver             Driver            @relation(fields: [driverId], references: [id], onDelete: Cascade)
   garage             Garage            @relation(fields: [garageId], references: [id], onDelete: Cascade)
+}
+
+enum EducationCategory {
+  ALL
+  SAFETY
+  MAINTENANCE
+  REPAIRS
+  TIPS
+}
+
+model EducationContent {
+  id          String            @id @default(uuid())
+  title       String
+  description String
+  category    EducationCategory
+  imageUrl    String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 }
 
