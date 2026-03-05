@@ -296,7 +296,7 @@ npm install
 npm run dev
 ```
 
-Default: `http://localhost:3000`.
+Default: `http://localhost:4000`.
 
 ---
 

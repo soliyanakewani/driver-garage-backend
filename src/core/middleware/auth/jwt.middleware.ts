@@ -50,3 +50,7 @@ export const verifyDriverJWT = (req: Request, res: Response, next: NextFunction)
     res.status(403).json({ error: 'Invalid token' });
   }
 };
+
+export const verifyAdminJWT = verifyJWT('ADMIN');
+export const verifyDriverJWT = verifyJWT('DRIVER');
+export const verifyGarageJWT = verifyJWT('GARAGE');
