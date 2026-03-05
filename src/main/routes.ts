@@ -2,8 +2,8 @@ import { Router } from 'express';
 import adminAuthRoutes from '../modules/admin/auth/routes/auth.routes';
 import driverAuthRoutes from '../modules/driver/auth/routes/auth.routes';
 import garageAuthRoutes from '../modules/garage/auth/routes/auth.routes';
-import driverAppointmentRoutes from '../modules/appointments/presentation/routes/driver-appointment.routes';
-import garageAppointmentRoutes from '../modules/appointments/presentation/routes/garage-appointment.routes';
+import driverAppointmentRoutes from '../modules/driver/appointments/presentation/routes/driver-appointment.routes';
+import garageAppointmentRoutes from '../modules/garage/appointments/presentation/routes/garage-appointment.routes';
 import garageAvailabilityRoutes from '../modules/garage/availability/presentation/routes/garage-availability.routes';
 import garageServicesRoutes from '../modules/garage/services/presentation/routes/garage-services.routes';
 
