@@ -4,6 +4,7 @@ import { Appointment } from '../../../../garage/appointments/domain/entities/app
 export interface BookGarageAppointmentRequest {
   driverId: string;
   garageId: string;
+  vehicleId: string;
   scheduledAt: Date;
   serviceDescription: string;
 }

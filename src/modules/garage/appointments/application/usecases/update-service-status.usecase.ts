@@ -4,7 +4,7 @@ import { Appointment, AppointmentStatus } from '../../domain/entities/appointmen
 export interface UpdateServiceStatusRequest {
   garageId: string;
   id: string;
-  status: AppointmentStatus.InService | AppointmentStatus.Completed;
+  status: AppointmentStatus;
 }
 
 export class UpdateServiceStatusUseCase {

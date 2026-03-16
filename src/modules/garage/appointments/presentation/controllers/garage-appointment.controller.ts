@@ -18,6 +18,20 @@ const approveUseCase = new ApproveAppointmentUseCase(repository);
 const rejectUseCase = new RejectAppointmentUseCase(repository);
 const updateStatusUseCase = new UpdateServiceStatusUseCase(repository);
 
+function buildVehicleSummary(v: any) {
+  return {
+    id: v.id,
+    plateNumber: v.plateNumber,
+    make: v.make,
+    model: v.model,
+    year: v.year,
+    color: v.color ?? null,
+    vin: v.vin ?? null,
+    mileage: v.mileage ?? null,
+    fuelType: v.fuelType ?? null,
+  };
+}
+
 export const listAppointments = async (req: Request, res: Response) => {
   try {
     const garageId = (req as any).user.id as string;
@@ -28,24 +42,22 @@ export const listAppointments = async (req: Request, res: Response) => {
     const appointments = await listUseCase.execute({ garageId, status: queryDto.status });
 
     const driverIds = Array.from(new Set(appointments.map((a) => a.toJSON().driverId)));
+    const vehicleIds = appointments
+      .map((a) => a.toJSON().vehicleId)
+      .filter((id): id is string => id !== null);
 
     const [drivers, vehicles] = await Promise.all([
       prisma.driver.findMany({ where: { id: { in: driverIds } } }),
-      prisma.vehicle.findMany({ where: { driverId: { in: driverIds } } }),
+      vehicleIds.length > 0
+        ? prisma.vehicle.findMany({ where: { id: { in: vehicleIds } } })
+        : Promise.resolve([]),
     ]);
 
-    type DriverRow = (typeof drivers)[number];
-    type VehicleRow = (typeof vehicles)[number];
-
-    const driverMap = new Map<string, DriverRow>();
+    const driverMap = new Map<string, (typeof drivers)[number]>();
     drivers.forEach((d) => driverMap.set(d.id, d));
 
-    const vehiclesByDriver = new Map<string, VehicleRow[]>();
-    vehicles.forEach((v) => {
-      const arr = vehiclesByDriver.get(v.driverId) ?? [];
-      arr.push(v);
-      vehiclesByDriver.set(v.driverId, arr);
-    });
+    const vehicleMap = new Map<string, (typeof vehicles)[number]>();
+    vehicles.forEach((v) => vehicleMap.set(v.id, v));
 
     const term = search?.trim().toLowerCase();
 
@@ -54,20 +66,18 @@ export const listAppointments = async (req: Request, res: Response) => {
         if (!term) return true;
         const json = appt.toJSON();
         const driver = driverMap.get(json.driverId);
-        const vList = vehiclesByDriver.get(json.driverId) ?? [];
+        const vehicle = json.vehicleId ? vehicleMap.get(json.vehicleId) : undefined;
 
         const driverName =
-          driver && typeof driver.firstName === 'string' && typeof driver.lastName === 'string'
+          driver
             ? `${driver.firstName} ${driver.lastName}`.toLowerCase()
             : '';
 
         const matchesDriver = driverName.includes(term);
-
-        const matchesVehicle = vList.some((v) => {
-          const name = `${v.make ?? ''} ${v.model ?? ''}`.toLowerCase();
-          const plate = (v.plateNumber ?? '').toLowerCase();
-          return name.includes(term) || plate.includes(term);
-        });
+        const matchesVehicle = vehicle
+          ? `${vehicle.make ?? ''} ${vehicle.model ?? ''}`.toLowerCase().includes(term) ||
+            (vehicle.plateNumber ?? '').toLowerCase().includes(term)
+          : false;
 
         return matchesDriver || matchesVehicle;
       })
@@ -75,33 +85,20 @@ export const listAppointments = async (req: Request, res: Response) => {
         const base = AppointmentResponseDto.from(appt);
         const json = appt.toJSON();
         const driver = driverMap.get(json.driverId);
-        const vList = vehiclesByDriver.get(json.driverId) ?? [];
+        const vehicle = json.vehicleId ? vehicleMap.get(json.vehicleId) : undefined;
 
         return {
           ...base,
           driver: driver
             ? {
-              id: driver.id,
-              firstName: driver.firstName,
-              lastName: driver.lastName,
-              email: driver.email,
-              phone: driver.phone,
-            }
+                id: driver.id,
+                firstName: driver.firstName,
+                lastName: driver.lastName,
+                email: driver.email,
+                phone: driver.phone,
+              }
             : null,
-          vehicles: vList.map((v) => {
-            const anyV = v as any;
-            return {
-              id: v.id,
-              plateNumber: v.plateNumber,
-              make: v.make,
-              model: v.model,
-              year: v.year,
-              color: v.color,
-              vin: anyV.vin ?? null,
-              mileage: anyV.mileage ?? null,
-              fuelType: anyV.fuelType ?? null,
-            };
-          }),
+          vehicle: vehicle ? buildVehicleSummary(vehicle) : null,
         };
       });
 
@@ -135,9 +132,11 @@ export const getAppointment = async (req: Request, res: Response) => {
     const appointment = await getUseCase.execute({ garageId, id });
     const json = appointment.toJSON();
 
-    const [driver, vehicles] = await Promise.all([
+    const [driver, vehicle] = await Promise.all([
       prisma.driver.findUnique({ where: { id: json.driverId } }),
-      prisma.vehicle.findMany({ where: { driverId: json.driverId } }),
+      json.vehicleId
+        ? prisma.vehicle.findUnique({ where: { id: json.vehicleId } })
+        : Promise.resolve(null),
     ]);
 
     const base = AppointmentResponseDto.from(appointment);
@@ -146,27 +145,14 @@ export const getAppointment = async (req: Request, res: Response) => {
       ...base,
       driver: driver
         ? {
-          id: driver.id,
-          firstName: driver.firstName,
-          lastName: driver.lastName,
-          email: driver.email,
-          phone: driver.phone,
-        }
+            id: driver.id,
+            firstName: driver.firstName,
+            lastName: driver.lastName,
+            email: driver.email,
+            phone: driver.phone,
+          }
         : null,
-      vehicles: vehicles.map((v) => {
-        const anyV = v as any;
-        return {
-          id: v.id,
-          plateNumber: v.plateNumber,
-          make: v.make,
-          model: v.model,
-          year: v.year,
-          color: v.color,
-          vin: anyV.vin ?? null,
-          mileage: anyV.mileage ?? null,
-          fuelType: anyV.fuelType ?? null,
-        };
-      }),
+      vehicle: vehicle ? buildVehicleSummary(vehicle) : null,
     });
   } catch (err: any) {
     const msg = err?.message ?? 'Internal error';

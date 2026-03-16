@@ -3,6 +3,9 @@ export interface GarageProfileUpdateData {
   email?: string;
   phone?: string;
   password?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface IGarageProfileRepository {

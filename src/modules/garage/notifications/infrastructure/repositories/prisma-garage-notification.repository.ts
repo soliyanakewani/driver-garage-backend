@@ -8,4 +8,24 @@ export class PrismaGarageNotificationRepository implements IGarageNotificationRe
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  async markAsRead(garageId: string, notificationId: string): Promise<unknown> {
+    const notification = await prisma.garageNotification.findFirst({
+      where: { id: notificationId, garageId },
+    });
+    if (!notification) throw new Error('Notification not found');
+
+    return prisma.garageNotification.update({
+      where: { id: notificationId },
+      data: { read: true },
+    });
+  }
+
+  async markAllAsRead(garageId: string): Promise<{ count: number }> {
+    const result = await prisma.garageNotification.updateMany({
+      where: { garageId, read: false },
+      data: { read: true },
+    });
+    return { count: result.count };
+  }
 }

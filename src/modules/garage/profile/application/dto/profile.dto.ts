@@ -1,12 +1,14 @@
-/** Body for PUT /garage/profile (basic info only; services/slots managed via their own APIs) */
+/** Body for PUT /garage/profile */
 export interface GarageProfileDTO {
   name?: string;
   email?: string;
   phone?: string;
   password?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
-/** Service linked by id (from GarageService table) */
 export interface GarageProfileServiceItem {
   id: string;
   garageId: string;
@@ -15,7 +17,6 @@ export interface GarageProfileServiceItem {
   updatedAt: Date;
 }
 
-/** Availability slot linked by id (from GarageAvailabilitySlot table) */
 export interface GarageProfileAvailabilitySlot {
   id: string;
   garageId: string;
@@ -26,13 +27,15 @@ export interface GarageProfileAvailabilitySlot {
   updatedAt: Date;
 }
 
-/** GET /garage/profile response: garage + services and availabilitySlots linked by id (no redundant data) */
 export interface GarageProfileResponse {
   id: string;
   name: string;
   email: string;
   phone: string;
   status: string;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   createdAt: Date;
   updatedAt: Date;
   services: GarageProfileServiceItem[];

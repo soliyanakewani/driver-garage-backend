@@ -8,7 +8,8 @@ export class GarageAuthService {
     email: string,
     phone: string,
     password: string,
-    services?: string[]
+    services?: string[],
+    location?: { address?: string; latitude?: number; longitude?: number }
   ) {
     const [existingByEmail, existingByPhone] = await Promise.all([
       prisma.garage.findUnique({ where: { email } }),
@@ -19,7 +20,15 @@ export class GarageAuthService {
 
     const hashed = await bcrypt.hash(password, 10);
     const garage = await prisma.garage.create({
-      data: { name, email, phone, password: hashed },
+      data: {
+        name,
+        email,
+        phone,
+        password: hashed,
+        address: location?.address ?? null,
+        latitude: location?.latitude != null ? Number(location.latitude) : null,
+        longitude: location?.longitude != null ? Number(location.longitude) : null,
+      },
     });
 
     const names = Array.isArray(services)
@@ -51,7 +60,7 @@ export class GarageAuthService {
   }
 
   private static otpStore = new Map<string, { code: string; expiresAt: number }>();
-  private static OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+  private static OTP_TTL_MS = 10 * 60 * 1000;
 
   async sendOtp(email: string) {
     const garage = await prisma.garage.findUnique({ where: { email } });

@@ -16,7 +16,7 @@ import garageRatingsRoutes from '../modules/garage/ratings/presentation/routes/g
 import adminGarageApprovalRoutes from '../modules/admin/garageApproval/presentation/routes/garage-approval.routes';
 import userManagementRoutes from "../modules/admin/userManagement/presentation/routes/userManagementRoutes" ;
 import educationalContentRoutes from '../modules/admin/educationalContent/presentation/routes/educational-content.routes';
-
+import nearbyGaragesRoutes from '../modules/garage/nearby/presentation/routes/nearby-garages.routes';
 
 const rootRouter = Router();
 
@@ -36,6 +36,7 @@ rootRouter.use("/admin", userManagementRoutes);
 rootRouter.use('/admin/educational-content', educationalContentRoutes);
 
 rootRouter.use('/garage', garageProfileRoutes);
+rootRouter.use('/services/nearby', nearbyGaragesRoutes);
 
 
 const driverRouter = Router();

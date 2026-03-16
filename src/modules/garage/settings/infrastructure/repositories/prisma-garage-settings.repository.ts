@@ -10,10 +10,12 @@ export class PrismaGarageSettingsRepository implements IGarageSettingsRepository
   }
 
   async update(garageId: string, data: Record<string, unknown>): Promise<unknown> {
+    const existing = (await this.getByGarageId(garageId)) as Record<string, unknown> | null ?? {};
+    const merged = { ...existing, ...data };
     await prisma.garageSetting.upsert({
       where: { garageId },
-      create: { garageId, data: (data as object) || {} },
-      update: { data: (data as object) || {} },
+      create: { garageId, data: merged as object },
+      update: { data: merged as object },
     });
     return this.getByGarageId(garageId);
   }

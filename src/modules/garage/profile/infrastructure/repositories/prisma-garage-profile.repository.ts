@@ -8,6 +8,9 @@ const profileSelect = {
   email: true,
   phone: true,
   status: true,
+  address: true,
+  latitude: true,
+  longitude: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -34,6 +37,10 @@ export class PrismaGarageProfileRepository implements IGarageProfileRepository {
 
     const updateData: Record<string, unknown> = {};
     if (data.name != null) updateData.name = data.name;
+    if (data.address != null) updateData.address = data.address;
+    if (data.latitude != null) updateData.latitude = Number(data.latitude);
+    if (data.longitude != null) updateData.longitude = Number(data.longitude);
+
     if (data.email != null) {
       const taken = await prisma.garage.findFirst({
         where: { email: data.email, NOT: { id: garageId } },

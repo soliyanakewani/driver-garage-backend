@@ -1,8 +1,6 @@
 import { prisma } from '../../../../../infrastructure/prisma/prisma.client';
 import { Appointment, AppointmentStatus } from '../../domain/entities/appointment.entity';
 import { IAppointmentRepository } from '../../domain/repositories/appointment.repository.interface';
-import { PrismaGarageAvailabilityRepository } from '../../../availability/infrastructure/repositories/prisma-availability.repository';
-import { DayOfWeek } from '../../../availability/domain/entities/availability-slot.entity';
 
 type PrismaAppointmentStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IN_SERVICE' | 'COMPLETED' | 'CANCELLED';
 
@@ -10,6 +8,7 @@ interface PrismaAppointment {
   id: string;
   driverId: string;
   garageId: string;
+  vehicleId: string | null;
   scheduledAt: Date;
   serviceDescription: string;
   status: PrismaAppointmentStatus;
@@ -40,6 +39,7 @@ function mapFromPrisma(model: PrismaAppointment): Appointment {
     id: model.id,
     driverId: model.driverId,
     garageId: model.garageId,
+    vehicleId: model.vehicleId ?? null,
     scheduledAt: model.scheduledAt,
     serviceDescription: model.serviceDescription,
     status: PRISMA_TO_DOMAIN_STATUS[model.status],
@@ -48,28 +48,7 @@ function mapFromPrisma(model: PrismaAppointment): Appointment {
   });
 }
 
-const RESCHEDULE_MIN_HOURS_BEFORE = 2;
-
 export class PrismaAppointmentRepository implements IAppointmentRepository {
-  private readonly _availabilityRepository = new PrismaGarageAvailabilityRepository();
-
-  private async _isGarageTimeAlreadyBooked(input: {
-    garageId: string;
-    scheduledAt: Date;
-    excludeAppointmentId?: string;
-  }): Promise<boolean> {
-    const existing = await prisma.appointment.findFirst({
-      where: {
-        garageId: input.garageId,
-        scheduledAt: input.scheduledAt,
-        ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {}),
-        status: { in: ['PENDING', 'APPROVED', 'IN_SERVICE'] as any },
-      },
-      select: { id: true },
-    });
-    return Boolean(existing);
-  }
-
   private async _findForDriver(id: string, driverId: string): Promise<PrismaAppointment | null> {
     return (await prisma.appointment.findFirst({ where: { id, driverId } })) as any;
   }
@@ -81,6 +60,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
   async createForDriver(input: {
     driverId: string;
     garageId: string;
+    vehicleId: string;
     scheduledAt: Date;
     serviceDescription: string;
   }): Promise<Appointment> {
@@ -94,31 +74,20 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
       );
     }
 
-    const now = new Date();
-    if (input.scheduledAt <= now) throw new Error('Appointment date and time must be in the future');
-
-    const { dayOfWeek, minuteOfDay } = this._getDayAndMinute(input.scheduledAt);
-    const withinSlot = await this._availabilityRepository.isTimeWithinAnySlot(
-      input.garageId,
-      dayOfWeek,
-      minuteOfDay
-    );
-    if (!withinSlot) throw new Error('Selected time is not within garage availability slots');
-
-    const isBooked = await this._isGarageTimeAlreadyBooked({
-      garageId: input.garageId,
-      scheduledAt: input.scheduledAt,
+    const vehicle = await prisma.vehicle.findFirst({
+      where: { id: input.vehicleId, driverId: input.driverId },
     });
-    if (isBooked) throw new Error('Selected time is already booked for this garage');
+    if (!vehicle) throw new Error('Vehicle not found or does not belong to you');
 
     const created = await prisma.appointment.create({
       data: {
         driverId: input.driverId,
         garageId: input.garageId,
+        vehicleId: input.vehicleId,
         scheduledAt: input.scheduledAt,
         serviceDescription: input.serviceDescription.trim() || 'General service',
         status: 'PENDING',
-      },
+      } as any,
     });
 
     return mapFromPrisma(created as any);
@@ -147,31 +116,6 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     if (appointment.status !== 'PENDING') {
       throw new Error('Only pending appointments can be rescheduled');
     }
-
-    const now = new Date();
-    const minAllowed = new Date(now.getTime() + RESCHEDULE_MIN_HOURS_BEFORE * 60 * 60 * 1000);
-    if (appointment.scheduledAt < minAllowed) {
-      throw new Error(
-        `Rescheduling is not allowed less than ${RESCHEDULE_MIN_HOURS_BEFORE} hours before the appointment`
-      );
-    }
-
-    if (newScheduledAt <= now) throw new Error('New date and time must be in the future');
-
-    const { dayOfWeek, minuteOfDay } = this._getDayAndMinute(newScheduledAt);
-    const withinSlot = await this._availabilityRepository.isTimeWithinAnySlot(
-      appointment.garageId,
-      dayOfWeek,
-      minuteOfDay
-    );
-    if (!withinSlot) throw new Error('Selected time is not within garage availability slots');
-
-    const isBooked = await this._isGarageTimeAlreadyBooked({
-      garageId: appointment.garageId,
-      scheduledAt: newScheduledAt,
-      excludeAppointmentId: appointment.id,
-    });
-    if (isBooked) throw new Error('Selected time is already booked for this garage');
 
     const updated = await prisma.appointment.update({
       where: { id },
@@ -216,9 +160,6 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
   async approveForGarage(id: string, garageId: string): Promise<Appointment> {
     const appointment = await this._findForGarage(id, garageId);
     if (!appointment) throw new Error('Appointment not found');
-    if (appointment.status !== 'PENDING') {
-      throw new Error('Only pending appointments can be approved');
-    }
 
     const updated = await prisma.appointment.update({
       where: { id },
@@ -231,9 +172,6 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
   async rejectForGarage(id: string, garageId: string): Promise<Appointment> {
     const appointment = await this._findForGarage(id, garageId);
     if (!appointment) throw new Error('Appointment not found');
-    if (appointment.status !== 'PENDING') {
-      throw new Error('Only pending appointments can be rejected');
-    }
 
     const updated = await prisma.appointment.update({
       where: { id },
@@ -246,29 +184,10 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
   async updateServiceStatusForGarage(
     id: string,
     garageId: string,
-    status: AppointmentStatus.InService | AppointmentStatus.Completed
+    status: AppointmentStatus
   ): Promise<Appointment> {
     const appointment = await this._findForGarage(id, garageId);
     if (!appointment) throw new Error('Appointment not found');
-
-    if (
-      appointment.status !== 'APPROVED' &&
-      appointment.status !== 'IN_SERVICE'
-    ) {
-      throw new Error('Service status can only be updated for approved or in-service appointments');
-    }
-
-    if (status === AppointmentStatus.InService && appointment.status !== 'APPROVED') {
-      throw new Error('Only approved appointments can be set to in-service');
-    }
-
-    if (
-      status === AppointmentStatus.Completed &&
-      appointment.status !== 'IN_SERVICE' &&
-      appointment.status !== 'APPROVED'
-    ) {
-      throw new Error('Only in-service or approved appointments can be marked completed');
-    }
 
     const updated = await prisma.appointment.update({
       where: { id },
@@ -276,21 +195,5 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     });
 
     return mapFromPrisma(updated as any);
-  }
-
-  private _getDayAndMinute(date: Date): { dayOfWeek: DayOfWeek; minuteOfDay: number } {
-    const jsDay = date.getDay();
-    const dayOfWeekMap: Record<number, DayOfWeek> = {
-      0: DayOfWeek.Sunday,
-      1: DayOfWeek.Monday,
-      2: DayOfWeek.Tuesday,
-      3: DayOfWeek.Wednesday,
-      4: DayOfWeek.Thursday,
-      5: DayOfWeek.Friday,
-      6: DayOfWeek.Saturday,
-    };
-    const dayOfWeek = dayOfWeekMap[jsDay];
-    const minuteOfDay = date.getHours() * 60 + date.getMinutes();
-    return { dayOfWeek, minuteOfDay };
   }
 }

@@ -71,6 +71,7 @@ model Vehicle {
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
   driver                  Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  appointments            Appointment[]
 
   @@unique([driverId, plateNumber])
   @@index([driverId])
@@ -83,6 +84,9 @@ model Garage {
   phone            String                @unique
   password         String
   status           AccountStatus         @default(PENDING)
+  address          String?
+  latitude         Float?
+  longitude        Float?
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
   appointments     Appointment[]
@@ -177,6 +181,7 @@ model Appointment {
   id                 String            @id @default(uuid())
   driverId           String
   garageId           String
+  vehicleId          String?
   scheduledAt        DateTime
   serviceDescription String
   status             AppointmentStatus @default(PENDING)
@@ -184,6 +189,7 @@ model Appointment {
   updatedAt          DateTime          @updatedAt
   driver             Driver            @relation(fields: [driverId], references: [id], onDelete: Cascade)
   garage             Garage            @relation(fields: [garageId], references: [id], onDelete: Cascade)
+  vehicle            Vehicle?          @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
 }
 
 enum EducationCategory {

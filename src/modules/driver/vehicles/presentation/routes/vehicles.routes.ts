@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { vehicleUpload } from '../../../../../core/middleware/upload.middleware';
 import {
   createVehicle,
   getVehicles,
@@ -9,10 +10,10 @@ import {
 
 const router = Router();
 
-router.post('/', createVehicle);
+router.post('/', vehicleUpload, createVehicle);
 router.get('/', getVehicles);
 router.get('/:vehicleId', getVehicleById);
-router.put('/:vehicleId', updateVehicle);
+router.put('/:vehicleId', vehicleUpload, updateVehicle);
 router.delete('/:vehicleId', deleteVehicle);
 
 export default router;

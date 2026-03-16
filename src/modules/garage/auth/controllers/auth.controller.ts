@@ -55,7 +55,26 @@ export const signup = async (req: Request, res: Response) => {
             }
           })()
         : undefined;
-    const garage = await service.signup(name, email, String(phone), password, services);
+
+    const rawLocation = body.garage_location ?? body.location;
+    let location: { address?: string; latitude?: number; longitude?: number } | undefined;
+    if (rawLocation) {
+      const loc = typeof rawLocation === 'string' ? (() => { try { return JSON.parse(rawLocation); } catch { return {}; } })() : rawLocation;
+      location = {
+        address: loc.address ?? loc.formatted_address ?? undefined,
+        latitude: loc.latitude != null ? Number(loc.latitude) : loc.lat != null ? Number(loc.lat) : undefined,
+        longitude: loc.longitude != null ? Number(loc.longitude) : loc.lng != null ? Number(loc.lng) : undefined,
+      };
+    } else {
+      const address = body.address as string | undefined;
+      const latitude = body.latitude != null ? Number(body.latitude) : undefined;
+      const longitude = body.longitude != null ? Number(body.longitude) : undefined;
+      if (address || latitude != null || longitude != null) {
+        location = { address, latitude, longitude };
+      }
+    }
+
+    const garage = await service.signup(name, email, String(phone), password, services, location);
     res.status(201).json(garage);
   } catch (err: unknown) {
     const { message, status } = authError(err);
