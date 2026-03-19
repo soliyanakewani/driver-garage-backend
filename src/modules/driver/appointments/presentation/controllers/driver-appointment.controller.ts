@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaAppointmentRepository } from '../../../../../garage/appointments/infrastructure/repositories/prisma-appointment.repository';
+import { PrismaAppointmentRepository } from '../../../../garage/appointments/infrastructure/repositories/prisma-appointment.repository';
 import { BookGarageAppointmentUseCase } from '../../application/usecases/book-garage-appointment.usecase';
 import { ListDriverAppointmentsUseCase } from '../../application/usecases/list-driver-appointments.usecase';
 import { GetDriverAppointmentUseCase } from '../../application/usecases/get-driver-appointment.usecase';

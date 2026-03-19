@@ -1,13 +1,13 @@
 import { AccountStatus } from "@prisma/client";
 import { UserRepository } from "../../domain/repositories/UserRepository";
-
+import { BlockUserDto } from "../dto/BlockUserDto";
 export class BlockUserUseCase {
   constructor(private userRepository: UserRepository) {}
 
-  async execute(userId: string, role: string) {
+  async execute(dto: BlockUserDto) {
     await this.userRepository.updateStatus(
-      userId,
-      role,
+      dto.userId,
+      dto.role,
       AccountStatus.BLOCKED
     );
   }
