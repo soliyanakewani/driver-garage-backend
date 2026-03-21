@@ -1,6 +1,7 @@
 import { prisma } from '../../../../../infrastructure/prisma/prisma.client';
 import { Appointment, AppointmentStatus } from '../../domain/entities/appointment.entity';
 import { IAppointmentRepository } from '../../domain/repositories/appointment.repository.interface';
+import { assertAppointmentWithinGarageAvailability } from '../availability-booking.util';
 
 type PrismaAppointmentStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IN_SERVICE' | 'COMPLETED' | 'CANCELLED';
 
@@ -79,6 +80,8 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     });
     if (!vehicle) throw new Error('Vehicle not found or does not belong to you');
 
+    await assertAppointmentWithinGarageAvailability(input.garageId, input.scheduledAt);
+
     const created = await prisma.appointment.create({
       data: {
         driverId: input.driverId,
@@ -116,6 +119,8 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     if (appointment.status !== 'PENDING') {
       throw new Error('Only pending appointments can be rescheduled');
     }
+
+    await assertAppointmentWithinGarageAvailability(appointment.garageId, newScheduledAt);
 
     const updated = await prisma.appointment.update({
       where: { id },

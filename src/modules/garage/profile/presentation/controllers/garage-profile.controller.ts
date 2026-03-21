@@ -4,6 +4,7 @@ import { GetProfileUseCase } from '../../application/usecases/get-profile.usecas
 import { UpdateProfileUseCase } from '../../application/usecases/update-profile.usecase';
 import { ChangePasswordUseCase } from '../../application/usecases/change-password.usecase';
 import type { GarageProfileDTO } from '../../application/dto/profile.dto';
+import { extractGarageBusinessDocumentUrl } from '../../../common/extract-business-document-url';
 
 const repository = new PrismaGarageProfileRepository();
 const getProfileUseCase = new GetProfileUseCase(repository);
@@ -26,7 +27,12 @@ export const updateProfile = async (req: Request, res: Response) => {
   try {
     const garageId = (req as any).user?.id as string;
     if (!garageId) return res.status(401).json({ error: 'Unauthorized' });
-    const data = req.body as GarageProfileDTO;
+    const uploadedUrl = extractGarageBusinessDocumentUrl(req);
+    const body = req.body as GarageProfileDTO;
+    const data: GarageProfileDTO = {
+      ...body,
+      ...(uploadedUrl ? { businessDocumentUrl: uploadedUrl } : {}),
+    };
     const profile = await updateProfileUseCase.execute(garageId, data);
     res.json(profile);
   } catch (err: unknown) {

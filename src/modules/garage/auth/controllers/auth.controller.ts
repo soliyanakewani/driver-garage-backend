@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { GarageAuthService } from '../services/auth.service';
+import { extractGarageBusinessDocumentUrl } from '../../common/extract-business-document-url';
 
 const service = new GarageAuthService();
 
@@ -74,8 +75,18 @@ export const signup = async (req: Request, res: Response) => {
       }
     }
 
-    const garage = await service.signup(name, email, String(phone), password, services, location);
-    res.status(201).json(garage);
+    const businessDocumentUrl = extractGarageBusinessDocumentUrl(req);
+    const garage = await service.signup(
+      name,
+      email,
+      String(phone),
+      password,
+      services,
+      location,
+      businessDocumentUrl
+    );
+    const { password: _pw, ...safe } = garage as { password: string; [k: string]: unknown };
+    res.status(201).json(safe);
   } catch (err: unknown) {
     const { message, status } = authError(err);
     return res.status(status).json({ error: message });

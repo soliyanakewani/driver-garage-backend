@@ -9,7 +9,8 @@ export class GarageAuthService {
     phone: string,
     password: string,
     services?: string[],
-    location?: { address?: string; latitude?: number; longitude?: number }
+    location?: { address?: string; latitude?: number; longitude?: number },
+    businessDocumentUrl?: string | null
   ) {
     const [existingByEmail, existingByPhone] = await Promise.all([
       prisma.garage.findUnique({ where: { email } }),
@@ -28,6 +29,7 @@ export class GarageAuthService {
         address: location?.address ?? null,
         latitude: location?.latitude != null ? Number(location.latitude) : null,
         longitude: location?.longitude != null ? Number(location.longitude) : null,
+        businessDocumentUrl: businessDocumentUrl?.trim() || null,
       },
     });
 

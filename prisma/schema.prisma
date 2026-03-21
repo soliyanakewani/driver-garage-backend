@@ -87,6 +87,8 @@ model Garage {
   address          String?
   latitude         Float?
   longitude        Float?
+  /// Business / registration document (PDF or image URL); signup or profile update
+  businessDocumentUrl String?            @map("business_document_url")
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
   appointments     Appointment[]

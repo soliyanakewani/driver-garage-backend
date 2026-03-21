@@ -36,6 +36,7 @@ export interface GarageProfileResponse {
   address: string | null;
   latitude: number | null;
   longitude: number | null;
+  businessDocumentUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
   services: GarageProfileServiceItem[];

@@ -6,6 +6,7 @@ export interface GarageProfileUpdateData {
   address?: string;
   latitude?: number;
   longitude?: number;
+  businessDocumentUrl?: string | null;
 }
 
 export interface IGarageProfileRepository {

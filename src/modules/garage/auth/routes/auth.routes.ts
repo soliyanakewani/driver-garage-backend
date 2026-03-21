@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { signup, login, sendOtp, verifyOtp } from '../controllers/auth.controller';
 import { logout } from '../../../common/auth/logout.controller';
-import { multipartForm } from '../../../../core/middleware/upload.middleware';
+import { garageDocumentUpload } from '../../../../core/middleware/upload.middleware';
 
 const router = Router();
 
-router.post('/signup', multipartForm, signup);
+/** Multipart (fields + optional document) or JSON; document fields: businessDocument, document, registrationDocument */
+router.post('/signup', garageDocumentUpload, signup);
 router.post('/login', login);
 router.post('/logout', logout);
 router.post('/send-otp', sendOtp);

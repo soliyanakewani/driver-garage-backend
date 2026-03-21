@@ -11,6 +11,7 @@ const profileSelect = {
   address: true,
   latitude: true,
   longitude: true,
+  businessDocumentUrl: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -40,6 +41,12 @@ export class PrismaGarageProfileRepository implements IGarageProfileRepository {
     if (data.address != null) updateData.address = data.address;
     if (data.latitude != null) updateData.latitude = Number(data.latitude);
     if (data.longitude != null) updateData.longitude = Number(data.longitude);
+    if (data.businessDocumentUrl !== undefined) {
+      updateData.businessDocumentUrl =
+        data.businessDocumentUrl === null || data.businessDocumentUrl === ''
+          ? null
+          : String(data.businessDocumentUrl);
+    }
 
     if (data.email != null) {
       const taken = await prisma.garage.findFirst({
