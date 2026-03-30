@@ -5,7 +5,8 @@ import { User } from "../../domain/types/User";
 const prisma = new PrismaClient();
 
 export class PrismaUserRepository implements UserRepository {
-  async findAll(search?: string, 
+  async findAll(
+    search?: string, 
     page: number = 1, 
     limit: number = 10
 ): Promise<User[]> {
@@ -13,7 +14,7 @@ export class PrismaUserRepository implements UserRepository {
         where: search
         ? {
             OR: [
-              { firstName: { contains: search, mode: "insensitive" } },
+          { firstName: { contains: search, mode: "insensitive" } },
           { lastName: { contains: search, mode: "insensitive" } },
           { email: { contains: search, mode: "insensitive" } },  
             ],
@@ -51,6 +52,25 @@ export class PrismaUserRepository implements UserRepository {
       },
     });
 
+    const admins = await prisma.admin.findMany({
+      where: search
+      ? {
+          OR: [
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+          ],
+      } 
+      : undefined,
+      skip: (page - 1) * limit,
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+      },
+    })
+
     const formattedDrivers: User[] = drivers.map((d) => ({
       id: d.id,
       name: `${d.firstName} ${d.lastName}`,
@@ -69,7 +89,16 @@ export class PrismaUserRepository implements UserRepository {
       createdAt: g.createdAt,
     }));
 
-    return [...formattedDrivers, ...formattedGarages];
+    const formattedAdmins: User[] = admins.map((a) => ({
+      id: a.id,
+      name: a.name,
+      email: a.email,
+      role: Role.ADMIN,
+      status: AccountStatus.ACTIVE, 
+      createdAt: a.createdAt,
+    }));
+
+    return [...formattedDrivers, ...formattedGarages, ...formattedAdmins];
   }
 
   async updateStatus(

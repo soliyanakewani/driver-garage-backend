@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { verifyDriverJWT } from '../../../../core/middleware/auth/jwt.middleware';
+import { verifyDriverJWT } from '../../../../../core/middleware/auth/jwt.middleware';
 import { getProfile, createProfile, updateProfile } from '../controllers/profile.controller';
 
 const router = Router();

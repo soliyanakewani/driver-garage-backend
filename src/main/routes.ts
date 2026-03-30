@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { verifyDriverJWT } from '../core/middleware/auth/jwt.middleware';
 import adminAuthRoutes from '../modules/admin/auth/routes/auth.routes';
 import driverAuthRoutes from '../modules/driver/auth/routes/auth.routes';
-import driverProfileRoutes from '../modules/driver/profile/routes/profile.routes';
+import driverProfileRoutes from '../modules/driver/profile/presentation/routes/profile.routes';
 import driverVehiclesRoutes from '../modules/driver/vehicles/presentation/routes/vehicles.routes';
 import garageAuthRoutes from '../modules/garage/auth/routes/auth.routes';
 import driverAppointmentRoutes from '../modules/driver/appointments/presentation/routes/driver-appointment.routes';
