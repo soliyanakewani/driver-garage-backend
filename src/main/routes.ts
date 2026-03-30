@@ -12,6 +12,7 @@ import garageServicesRoutes from '../modules/garage/services/presentation/routes
 import adminGarageApprovalRoutes from '../modules/admin/garageApproval/presentation/routes/garage-approval.routes';
 import userManagementRoutes from "../modules/admin/userManagement/presentation/routes/userManagementRoutes" ;
 import educationalContentRoutes from '../modules/admin/educationalContent/presentation/routes/educational-content.routes';
+import postRoutes from "../modules/driver/community/presentation/routes/postRoutes";
 
 
 const rootRouter = Router();
@@ -28,6 +29,7 @@ rootRouter.use('/garages/auth', garageAuthRoutes);
 rootRouter.use('/admin/garages-approval', adminGarageApprovalRoutes);
 rootRouter.use("/admin", userManagementRoutes);
 rootRouter.use('/admin/educational-content', educationalContentRoutes);
+rootRouter.use('/driver/community/posts', postRoutes);
 
 
 const driverRouter = Router();
