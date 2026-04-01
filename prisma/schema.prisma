@@ -158,3 +158,12 @@ model EducationContent {
   updatedAt   DateTime          @updatedAt
 }
 
+model Post {
+  id        String  @id @default(uuid())
+  title     String 
+  content   String
+  imageUrl  String? 
+  authorId  String
+  createdAt DateTime @default(now()) 
+}
+
