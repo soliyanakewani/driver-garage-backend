@@ -19,10 +19,31 @@ const vehicleIdParam = (params: Request['params'], key: string): string => {
   return Array.isArray(value) ? value[0] ?? '' : (value ?? '');
 };
 
+function fileUrl(req: Request, file: Express.Multer.File): string {
+  const host = `${req.protocol}://${req.get('host')}`;
+  return `${host}/uploads/vehicles/${file.filename}`;
+}
+
+function extractFileUrls(req: Request): {
+  imageUrl?: string;
+  insuranceDocumentUrl?: string;
+  registrationDocumentUrl?: string;
+} {
+  const files = (req as any).files as Record<string, Express.Multer.File[]> | undefined;
+  if (!files) return {};
+
+  const urls: Record<string, string> = {};
+  if (files.image?.[0]) urls.imageUrl = fileUrl(req, files.image[0]);
+  if (files.insuranceDocument?.[0]) urls.insuranceDocumentUrl = fileUrl(req, files.insuranceDocument[0]);
+  if (files.registrationDocument?.[0]) urls.registrationDocumentUrl = fileUrl(req, files.registrationDocument[0]);
+  return urls;
+}
+
 export const createVehicle = async (req: Request, res: Response) => {
   try {
     const driverId = (req as Request & { user: JwtPayload }).user.id;
-    const vehicle = await createVehicleUseCase.execute(driverId, req.body);
+    const body = { ...req.body, ...extractFileUrls(req) };
+    const vehicle = await createVehicleUseCase.execute(driverId, body);
     res.status(201).json(vehicle);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to create vehicle';
@@ -57,7 +78,8 @@ export const updateVehicle = async (req: Request, res: Response) => {
   try {
     const driverId = (req as Request & { user: JwtPayload }).user.id;
     const vehicleId = vehicleIdParam(req.params, 'vehicleId');
-    const vehicle = await updateVehicleUseCase.execute(driverId, vehicleId, req.body);
+    const body = { ...req.body, ...extractFileUrls(req) };
+    const vehicle = await updateVehicleUseCase.execute(driverId, vehicleId, body);
     res.json(vehicle);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to update vehicle';

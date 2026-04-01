@@ -61,4 +61,15 @@ export class PrismaGarageServiceRepository implements IGarageServiceRepository {
     if (!existing) throw new Error('Service not found');
     await prisma.garageService.delete({ where: { id: serviceId } });
   }
+
+  async replaceAllForGarage(garageId: string, names: string[]): Promise<GarageService[]> {
+    await prisma.garageService.deleteMany({ where: { garageId } });
+    const trimmed = names.map((n) => (typeof n === 'string' ? n.trim() : '')).filter(Boolean);
+    const created: GarageService[] = [];
+    for (const name of trimmed) {
+      const s = await this.create({ garageId, name });
+      created.push(s);
+    }
+    return created;
+  }
 }

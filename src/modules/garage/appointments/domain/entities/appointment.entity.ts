@@ -11,6 +11,7 @@ export interface AppointmentProps {
   id: string;
   driverId: string;
   garageId: string;
+  vehicleId: string | null;
   scheduledAt: Date;
   serviceDescription: string;
   status: AppointmentStatus;
@@ -35,6 +36,10 @@ export class Appointment {
 
   get garageId(): string {
     return this.props.garageId;
+  }
+
+  get vehicleId(): string | null {
+    return this.props.vehicleId;
   }
 
   get scheduledAt(): Date {

@@ -1,11 +1,15 @@
 import { Router } from 'express';
-import { signup, login } from '../controllers/auth.controller';
+import { signup, login, sendOtp, verifyOtp } from '../controllers/auth.controller';
 import { logout } from '../../../common/auth/logout.controller';
+import { garageDocumentUpload } from '../../../../core/middleware/upload.middleware';
 
 const router = Router();
 
-router.post('/signup', signup);
+/** Multipart (fields + optional document) or JSON; document fields: businessDocument, document, registrationDocument */
+router.post('/signup', garageDocumentUpload, signup);
 router.post('/login', login);
 router.post('/logout', logout);
+router.post('/send-otp', sendOtp);
+router.post('/verify-otp', verifyOtp);
 
 export default router;

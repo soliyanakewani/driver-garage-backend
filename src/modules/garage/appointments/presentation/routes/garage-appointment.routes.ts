@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { verifyGarageJWT } from '../../../../../core/middleware/auth/jwt.middleware';
 import {
   listAppointments,
+  listAppointmentHistory,
   getAppointment,
   approveAppointment,
   rejectAppointment,
@@ -13,6 +14,7 @@ const router = Router();
 router.use(verifyGarageJWT);
 
 router.get('/', listAppointments);
+router.get('/history', listAppointmentHistory);
 router.get('/:id', getAppointment);
 router.patch('/:id/approve', approveAppointment);
 router.patch('/:id/reject', rejectAppointment);

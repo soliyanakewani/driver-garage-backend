@@ -7,6 +7,14 @@ export interface Vehicle {
   type: string | null;
   year: number;
   color: string | null;
+  vin: string | null;
+  mileage: number | null;
+  fuelType: string | null;
+  imageUrl: string | null;
+  insuranceDocumentUrl: string | null;
+  insuranceExpiresAt: Date | null;
+  registrationDocumentUrl: string | null;
+  registrationExpiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

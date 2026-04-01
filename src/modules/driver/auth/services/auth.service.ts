@@ -4,8 +4,11 @@ import jwt from 'jsonwebtoken';
 
 export class DriverAuthService {
   async signup(firstName: string, lastName: string, email: string, phone: string, password: string) {
-    const existing = await prisma.driver.findUnique({ where: { email } });
-    if (existing) throw new Error('Email already registered');
+    const existingByEmail = await prisma.driver.findUnique({ where: { email } });
+    if (existingByEmail) throw new Error('Email already registered');
+
+    const existingByPhone = await prisma.driver.findUnique({ where: { phone } });
+    if (existingByPhone) throw new Error('Phone already registered');
 
     const hashed = await bcrypt.hash(password, 10);
     return prisma.driver.create({

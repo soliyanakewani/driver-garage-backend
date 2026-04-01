@@ -10,4 +10,7 @@ export interface IGarageServiceRepository {
   delete(serviceId: string, garageId: string): Promise<void>;
 
   findById(serviceId: string, garageId: string): Promise<GarageService | null>;
+
+  /** Replace all services for a garage with the given list of names (sync list from UI). */
+  replaceAllForGarage(garageId: string, names: string[]): Promise<GarageService[]>;
 }

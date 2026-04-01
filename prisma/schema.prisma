@@ -52,34 +52,86 @@ model Driver {
 }
 
 model Vehicle {
-  id         String   @id @default(uuid())
-  driverId   String
-  plateNumber String
-  make       String
-  model      String
-  type       String?  // e.g. sedan, SUV
-  year       Int
-  color      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  driver     Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  id                     String    @id @default(uuid())
+  driverId               String
+  plateNumber             String
+  make                    String
+  model                   String
+  type                    String?   // e.g. sedan, SUV
+  year                    Int
+  color                   String?
+  vin                     String?   @db.VarChar(17)
+  mileage                 Int?      // current mileage in miles
+  fuelType                String?   @map("fuel_type")
+  imageUrl                String?   @map("image_url")
+  insuranceDocumentUrl    String?   @map("insurance_document_url")
+  insuranceExpiresAt      DateTime? @map("insurance_expires_at")
+  registrationDocumentUrl String?   @map("registration_document_url")
+  registrationExpiresAt   DateTime? @map("registration_expires_at")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  driver                  Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  appointments            Appointment[]
 
   @@unique([driverId, plateNumber])
   @@index([driverId])
 }
 
 model Garage {
-  id            String         @id @default(uuid())
-  name          String
-  email         String         @unique
-  phone         String         @unique
-  password      String
-  status        AccountStatus @default(PENDING)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  appointments  Appointment[]
+  id               String                @id @default(uuid())
+  name             String
+  email            String                @unique
+  phone            String                @unique
+  password         String
+  status           AccountStatus         @default(PENDING)
+  address          String?
+  latitude         Float?
+  longitude        Float?
+  /// Business / registration document (PDF or image URL); signup or profile update
+  businessDocumentUrl String?            @map("business_document_url")
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  appointments     Appointment[]
   availabilitySlots GarageAvailabilitySlot[]
-  services     GarageService[]
+  services         GarageService[]
+  notifications    GarageNotification[]
+  setting          GarageSetting?
+  ratings          GarageRating[]
+}
+
+model GarageNotification {
+  id        String   @id @default(uuid())
+  garageId  String
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  garage    Garage   @relation(fields: [garageId], references: [id], onDelete: Cascade)
+
+  @@index([garageId])
+}
+
+model GarageSetting {
+  id        String   @id @default(uuid())
+  garageId  String   @unique
+  data      Json     @default("{}")
+  updatedAt DateTime @updatedAt
+
+  garage    Garage   @relation(fields: [garageId], references: [id], onDelete: Cascade)
+}
+
+model GarageRating {
+  id        String   @id @default(uuid())
+  garageId  String
+  driverId  String
+  rating    Int      // 1-5
+  comment   String?
+  createdAt DateTime @default(now())
+
+  garage    Garage   @relation(fields: [garageId], references: [id], onDelete: Cascade)
+
+  @@index([garageId])
 }
 
 model GarageService {
@@ -131,6 +183,7 @@ model Appointment {
   id                 String            @id @default(uuid())
   driverId           String
   garageId           String
+  vehicleId          String?
   scheduledAt        DateTime
   serviceDescription String
   status             AppointmentStatus @default(PENDING)
@@ -138,6 +191,7 @@ model Appointment {
   updatedAt          DateTime          @updatedAt
   driver             Driver            @relation(fields: [driverId], references: [id], onDelete: Cascade)
   garage             Garage            @relation(fields: [garageId], references: [id], onDelete: Cascade)
+  vehicle            Vehicle?          @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
 }
 
 enum EducationCategory {

@@ -5,6 +5,7 @@ export interface IAppointmentRepository {
   createForDriver(input: {
     driverId: string;
     garageId: string;
+    vehicleId: string;
     scheduledAt: Date;
     serviceDescription: string;
   }): Promise<Appointment>;
@@ -29,6 +30,6 @@ export interface IAppointmentRepository {
   updateServiceStatusForGarage(
     id: string,
     garageId: string,
-    status: AppointmentStatus.InService | AppointmentStatus.Completed
+    status: AppointmentStatus
   ): Promise<Appointment>;
 }
