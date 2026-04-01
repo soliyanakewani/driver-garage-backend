@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { verifyDriverJWT } from '../core/middleware/auth/jwt.middleware';
 import adminAuthRoutes from '../modules/admin/auth/routes/auth.routes';
 import driverAuthRoutes from '../modules/driver/auth/routes/auth.routes';
-import driverProfileRoutes from '../modules/driver/profile/routes/profile.routes';
+import driverProfileRoutes from '../modules/driver/profile/presentation/routes/profile.routes';
 import driverVehiclesRoutes from '../modules/driver/vehicles/presentation/routes/vehicles.routes';
 import garageAuthRoutes from '../modules/garage/auth/routes/auth.routes';
 import driverAppointmentRoutes from '../modules/driver/appointments/presentation/routes/driver-appointment.routes';
@@ -17,6 +17,8 @@ import adminGarageApprovalRoutes from '../modules/admin/garageApproval/presentat
 import userManagementRoutes from "../modules/admin/userManagement/presentation/routes/userManagementRoutes" ;
 import educationalContentRoutes from '../modules/admin/educationalContent/presentation/routes/educational-content.routes';
 import nearbyGaragesRoutes from '../modules/garage/nearby/presentation/routes/nearby-garages.routes';
+import postRoutes from "../modules/driver/community/presentation/routes/postRoutes";
+
 
 const rootRouter = Router();
 
@@ -34,6 +36,7 @@ rootRouter.use('/driver', driverProfileRoutes);
 rootRouter.use('/admin/garages-approval', adminGarageApprovalRoutes);
 rootRouter.use("/admin", userManagementRoutes);
 rootRouter.use('/admin/educational-content', educationalContentRoutes);
+rootRouter.use('/driver/community/posts', postRoutes);
 
 rootRouter.use('/garage', garageProfileRoutes);
 rootRouter.use('/services/nearby', nearbyGaragesRoutes);

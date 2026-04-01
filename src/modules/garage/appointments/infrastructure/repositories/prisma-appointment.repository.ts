@@ -2,6 +2,8 @@ import { prisma } from '../../../../../infrastructure/prisma/prisma.client';
 import { Appointment, AppointmentStatus } from '../../domain/entities/appointment.entity';
 import { IAppointmentRepository } from '../../domain/repositories/appointment.repository.interface';
 import { assertAppointmentWithinGarageAvailability } from '../availability-booking.util';
+import { PrismaGarageAvailabilityRepository } from '../../../availability/infrastructure/repositories/prisma-availability.repository';
+import { DayOfWeek } from '../../../availability/domain/entities/availability-slot.entity';
 
 type PrismaAppointmentStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IN_SERVICE' | 'COMPLETED' | 'CANCELLED';
 
