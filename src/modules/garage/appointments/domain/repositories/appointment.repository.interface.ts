@@ -8,6 +8,7 @@ export interface IAppointmentRepository {
     vehicleId: string;
     scheduledAt: Date;
     serviceDescription: string;
+    garageServiceIds: string[];
   }): Promise<Appointment>;
 
   findByDriver(driverId: string, status?: AppointmentStatus): Promise<Appointment[]>;

@@ -62,6 +62,7 @@ export const bookAppointment = async (req: Request, res: Response) => {
       vehicleId: dto.vehicleId,
       scheduledAt: dto.scheduledAt,
       serviceDescription: dto.serviceDescription,
+      garageServiceIds: dto.garageServiceIds,
     });
 
     res.status(201).json(await enrichAppointment(appointment));
