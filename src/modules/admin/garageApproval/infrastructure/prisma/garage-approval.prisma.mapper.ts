@@ -9,6 +9,10 @@ export class GaragePrismaMapper {
       email: raw.email,
       phone: raw.phone,
       status: raw.status,
+      address: raw.address,
+      latitude: raw.latitude,
+      longitude: raw.longitude,
+      businessDocumentUrl: raw.businessDocumentUrl,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
     };

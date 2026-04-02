@@ -18,6 +18,8 @@ import userManagementRoutes from "../modules/admin/userManagement/presentation/r
 import educationalContentRoutes from '../modules/admin/educationalContent/presentation/routes/educational-content.routes';
 import nearbyGaragesRoutes from '../modules/garage/nearby/presentation/routes/nearby-garages.routes';
 import postRoutes from "../modules/driver/community/presentation/routes/postRoutes";
+import maintenanceRoutes from '../modules/driver/maintenance/presentation/routes/maintenance.routes';
+import driverEducationRoutes from '../modules/driver/education/presentation/routes/driver-education.routes';
 
 
 const rootRouter = Router();
@@ -37,6 +39,8 @@ rootRouter.use('/admin/garages-approval', adminGarageApprovalRoutes);
 rootRouter.use("/admin", userManagementRoutes);
 rootRouter.use('/admin/educational-content', educationalContentRoutes);
 rootRouter.use('/driver/community/posts', postRoutes);
+rootRouter.use('/driver/maintenance', maintenanceRoutes);
+rootRouter.use('/driver/education', driverEducationRoutes);
 
 rootRouter.use('/garage', garageProfileRoutes);
 rootRouter.use('/services/nearby', nearbyGaragesRoutes);

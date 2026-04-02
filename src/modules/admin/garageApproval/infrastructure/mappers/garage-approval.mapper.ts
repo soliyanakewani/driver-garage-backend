@@ -8,6 +8,10 @@ export class GarageMapper {
       email: garage.email,
       phone: garage.phone,
       status: garage.status,
+      address: garage.address,
+      latitude: garage.latitude,
+      longitude: garage.longitude,
+      businessDocumentUrl: garage.businessDocumentUrl,
       createdAt: garage.createdAt,
     };
   }

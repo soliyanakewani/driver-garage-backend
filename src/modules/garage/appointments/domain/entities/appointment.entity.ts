@@ -14,6 +14,7 @@ export interface AppointmentProps {
   vehicleId: string | null;
   scheduledAt: Date;
   serviceDescription: string;
+  services: string[];
   status: AppointmentStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -48,6 +49,10 @@ export class Appointment {
 
   get serviceDescription(): string {
     return this.props.serviceDescription;
+  }
+
+  get services(): string[] {
+    return this.props.services;
   }
 
   get status(): AppointmentStatus {

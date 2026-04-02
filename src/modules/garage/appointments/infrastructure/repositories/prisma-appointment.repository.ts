@@ -14,6 +14,11 @@ interface PrismaAppointment {
   vehicleId: string | null;
   scheduledAt: Date;
   serviceDescription: string;
+  appointmentServices?: Array<{
+    garageService: {
+      name: string;
+    };
+  }>;
   status: PrismaAppointmentStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -45,6 +50,7 @@ function mapFromPrisma(model: PrismaAppointment): Appointment {
     vehicleId: model.vehicleId ?? null,
     scheduledAt: model.scheduledAt,
     serviceDescription: model.serviceDescription,
+    services: (model.appointmentServices ?? []).map((entry) => entry.garageService.name),
     status: PRISMA_TO_DOMAIN_STATUS[model.status],
     createdAt: model.createdAt,
     updatedAt: model.updatedAt,
@@ -53,11 +59,17 @@ function mapFromPrisma(model: PrismaAppointment): Appointment {
 
 export class PrismaAppointmentRepository implements IAppointmentRepository {
   private async _findForDriver(id: string, driverId: string): Promise<PrismaAppointment | null> {
-    return (await prisma.appointment.findFirst({ where: { id, driverId } })) as any;
+    return (await prisma.appointment.findFirst({
+      where: { id, driverId },
+      include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
+    })) as any;
   }
 
   private async _findForGarage(id: string, garageId: string): Promise<PrismaAppointment | null> {
-    return (await prisma.appointment.findFirst({ where: { id, garageId } })) as any;
+    return (await prisma.appointment.findFirst({
+      where: { id, garageId },
+      include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
+    })) as any;
   }
 
   async createForDriver(input: {
@@ -66,6 +78,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     vehicleId: string;
     scheduledAt: Date;
     serviceDescription: string;
+    garageServiceIds: string[];
   }): Promise<Appointment> {
     const garage = await prisma.garage.findUnique({ where: { id: input.garageId } });
     if (!garage) throw new Error('Garage not found');
@@ -83,6 +96,17 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     if (!vehicle) throw new Error('Vehicle not found or does not belong to you');
 
     await assertAppointmentWithinGarageAvailability(input.garageId, input.scheduledAt);
+    if (!input.garageServiceIds.length) {
+      throw new Error('At least one service must be selected');
+    }
+    const uniqueServiceIds = [...new Set(input.garageServiceIds)];
+    const services = await prisma.garageService.findMany({
+      where: { garageId: input.garageId, id: { in: uniqueServiceIds } },
+      select: { id: true, name: true },
+    });
+    if (services.length !== uniqueServiceIds.length) {
+      throw new Error('One or more selected services are invalid for this garage');
+    }
 
     const created = await prisma.appointment.create({
       data: {
@@ -91,8 +115,12 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
         vehicleId: input.vehicleId,
         scheduledAt: input.scheduledAt,
         serviceDescription: input.serviceDescription.trim() || 'General service',
+        appointmentServices: {
+          create: services.map((service) => ({ garageServiceId: service.id })),
+        },
         status: 'PENDING',
       } as any,
+      include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
     return mapFromPrisma(created as any);
@@ -105,6 +133,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     const records = await prisma.appointment.findMany({
       where,
       orderBy: { scheduledAt: 'desc' },
+      include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
     return (records as any[]).map(mapFromPrisma);
@@ -127,6 +156,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     const updated = await prisma.appointment.update({
       where: { id },
       data: { scheduledAt: newScheduledAt },
+      include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
     return mapFromPrisma(updated as any);
@@ -142,6 +172,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     const updated = await prisma.appointment.update({
       where: { id },
       data: { status: 'CANCELLED' },
+      include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
     return mapFromPrisma(updated as any);
@@ -154,6 +185,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     const records = await prisma.appointment.findMany({
       where,
       orderBy: { scheduledAt: 'asc' },
+      include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
     return (records as any[]).map(mapFromPrisma);
@@ -171,6 +203,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     const updated = await prisma.appointment.update({
       where: { id },
       data: { status: 'APPROVED' },
+      include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
     return mapFromPrisma(updated as any);
@@ -183,6 +216,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     const updated = await prisma.appointment.update({
       where: { id },
       data: { status: 'REJECTED' },
+      include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
     return mapFromPrisma(updated as any);
@@ -199,6 +233,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     const updated = await prisma.appointment.update({
       where: { id },
       data: { status: DOMAIN_TO_PRISMA_STATUS[status] },
+      include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
     return mapFromPrisma(updated as any);

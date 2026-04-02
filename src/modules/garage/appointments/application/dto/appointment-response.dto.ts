@@ -8,6 +8,7 @@ export class AppointmentResponseDto {
     public readonly vehicleId: string | null,
     public readonly scheduledAt: string,
     public readonly serviceDescription: string,
+    public readonly services: string[],
     public readonly status: string,
     public readonly createdAt: string,
     public readonly updatedAt: string
@@ -22,6 +23,7 @@ export class AppointmentResponseDto {
       json.vehicleId,
       json.scheduledAt.toISOString(),
       json.serviceDescription,
+      json.services,
       json.status,
       json.createdAt.toISOString(),
       json.updatedAt.toISOString()

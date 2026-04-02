@@ -7,6 +7,7 @@ export interface BookGarageAppointmentRequest {
   vehicleId: string;
   scheduledAt: Date;
   serviceDescription: string;
+  garageServiceIds: string[];
 }
 
 export class BookGarageAppointmentUseCase {
