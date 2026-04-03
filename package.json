@@ -4,6 +4,7 @@
   "description": "Backend for driver assistant project — Clean Architecture, module-by-module",
   "main": "dist/main/index.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "ts-node-dev --respawn --transpile-only src/main/server.ts",
     "build": "tsc",
     "start": "node dist/main/index.js",

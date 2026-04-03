@@ -1,10 +1,12 @@
-import { MaintenanceReminder } from '../entities/maintenance-reminder.entity';
+import { MaintenanceReminder, MaintenanceReminderView } from '../entities/maintenance-reminder.entity';
 import { MaintenanceRecord } from '../entities/maintenance-record.entity';
+import type { VehicleHealthState } from '../maintenance-health.types';
 
 export interface CreateReminderData {
   driverId: string;
-  vehicleId?: string | null;
-  serviceName: string;
+  vehicleId: string;
+  presetCategory: string;
+  customServiceName: string | null;
   scheduledDate: Date;
   estimatedCostMin?: number | null;
   estimatedCostMax?: number | null;
@@ -39,14 +41,25 @@ export interface UpdateRecordData {
   vehicleId?: string | null;
 }
 
+export interface VehicleHealthSnapshot {
+  vehicleId: string;
+  health: VehicleHealthState;
+  overallHealth: number;
+}
+
 export interface IMaintenanceRepository {
-  // Reminders
   createReminder(data: CreateReminderData): Promise<MaintenanceReminder>;
-  findAllReminders(driverId: string): Promise<MaintenanceReminder[]>;
+  findAllReminders(
+    driverId: string,
+    options?: { vehicleId?: string; includeCompleted?: boolean }
+  ): Promise<MaintenanceReminderView[]>;
   findReminderById(driverId: string, id: string): Promise<MaintenanceReminder | null>;
   updateReminder(driverId: string, id: string, data: UpdateReminderData): Promise<MaintenanceReminder>;
   toggleReminderSet(driverId: string, id: string): Promise<MaintenanceReminder>;
   deleteReminder(driverId: string, id: string): Promise<void>;
+  markReminderDone(driverId: string, id: string, now: Date): Promise<MaintenanceReminderView>;
+
+  getVehicleHealth(driverId: string, vehicleId: string): Promise<VehicleHealthSnapshot>;
 
   // Records (history)
   createRecord(data: CreateRecordData): Promise<MaintenanceRecord>;
@@ -56,13 +69,18 @@ export interface IMaintenanceRepository {
   deleteRecord(driverId: string, id: string): Promise<void>;
 
   // Notifications
-  listDriverNotifications(driverId: string): Promise<Array<{
-    id: string;
-    title: string;
-    body: string;
-    read: boolean;
-    createdAt: Date;
-  }>>;
+  listDriverNotifications(driverId: string): Promise<
+    Array<{
+      id: string;
+      title: string;
+      body: string;
+      read: boolean;
+      createdAt: Date;
+      vehicleId: string | null;
+      reminderId: string | null;
+      vehiclePlate: string | null;
+    }>
+  >;
   markDriverNotificationRead(driverId: string, notificationId: string): Promise<void>;
   dispatchDueReminderNotifications(now: Date): Promise<number>;
 }

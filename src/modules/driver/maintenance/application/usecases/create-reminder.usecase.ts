@@ -6,7 +6,8 @@ export class CreateReminderUseCase {
   constructor(private readonly repository: IMaintenanceRepository) {}
 
   async execute(driverId: string, dto: CreateReminderDto): Promise<MaintenanceReminder> {
-    if (!dto.serviceName?.trim()) throw new Error('Service name is required');
+    if (!dto.vehicleId?.trim()) throw new Error('vehicleId is required');
+    if (!dto.presetCategory?.trim()) throw new Error('presetCategory is required — use GET /driver/maintenance/catalog');
     if (!dto.scheduledDate) throw new Error('Scheduled date is required');
 
     const scheduledDate = new Date(dto.scheduledDate);
@@ -20,8 +21,9 @@ export class CreateReminderUseCase {
 
     const data: CreateReminderData = {
       driverId,
-      vehicleId: dto.vehicleId ?? null,
-      serviceName: dto.serviceName.trim(),
+      vehicleId: dto.vehicleId.trim(),
+      presetCategory: dto.presetCategory.trim(),
+      customServiceName: dto.customServiceName?.trim() ?? null,
       scheduledDate,
       estimatedCostMin: dto.estimatedCostMin ?? null,
       estimatedCostMax: dto.estimatedCostMax ?? null,
