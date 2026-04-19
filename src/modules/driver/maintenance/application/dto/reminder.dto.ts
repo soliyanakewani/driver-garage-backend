@@ -1,7 +1,11 @@
 export interface CreateReminderDto {
-  vehicleId?: string;
-  serviceName: string;
-  scheduledDate: string; // ISO date string from client
+  /** Required — which car this maintenance is for */
+  vehicleId: string;
+  /** One of MAINTENANCE_CATALOG ids (e.g. OIL_CHANGE) or OTHER */
+  presetCategory: string;
+  /** Required when presetCategory is OTHER */
+  customServiceName?: string;
+  scheduledDate: string;
   estimatedCostMin?: number;
   estimatedCostMax?: number;
   notes?: string;
