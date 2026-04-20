@@ -77,6 +77,8 @@ model Vehicle {
   appointments            Appointment[]
   maintenanceReminders    MaintenanceReminder[]
   maintenanceRecords      MaintenanceRecord[]
+  maintenanceHealth       VehicleMaintenanceHealth?
+  driverNotifications     DriverNotification[]
 
   @@unique([driverId, plateNumber])
   @@index([driverId])
@@ -218,16 +220,49 @@ model AppointmentService {
 }
 
 model DriverNotification {
-  id        String   @id @default(uuid())
-  driverId  String
-  title     String
-  body      String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  driverId     String
+  vehicleId    String?
+  reminderId   String?
+  vehiclePlate String?
+  title        String
+  body         String
+  read         Boolean  @default(false)
+  createdAt    DateTime @default(now())
 
-  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  driver  Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
 
   @@index([driverId])
+  @@index([vehicleId])
+  @@index([reminderId])
+}
+
+model VehicleMaintenanceHealth {
+  vehicleId String   @id
+  health    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+enum MaintenancePresetCategory {
+  OIL_CHANGE
+  TIRE_ROTATION
+  TIRE_INSPECTION
+  BRAKE_INSPECTION
+  BRAKE_SERVICE
+  BATTERY_CHECK
+  COOLANT
+  TRANSMISSION_FLUID
+  AIR_FILTER
+  CABIN_FILTER
+  ENGINE_DIAGNOSTIC
+  BELTS_HOSES
+  SPARK_PLUGS
+  WIPERS_LIGHTS
+  FLUIDS_CHECK
+  OTHER
 }
 
 enum EducationCategory {
@@ -261,23 +296,31 @@ model Post {
 }
 
 model MaintenanceReminder {
-  id               String    @id @default(uuid())
-  driverId         String
-  vehicleId        String?
-  serviceName      String
-  scheduledDate    DateTime
-  estimatedCostMin Float?    @map("estimated_cost_min")
-  estimatedCostMax Float?    @map("estimated_cost_max")
-  reminderSet      Boolean   @default(false) @map("reminder_set")
-  notifiedAt       DateTime? @map("notified_at")
-  notes            String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                    String                   @id @default(uuid())
+  driverId              String
+  vehicleId             String?
+  serviceName           String
+  presetCategory        MaintenancePresetCategory?
+  customServiceName     String?
+  scheduledDate         DateTime
+  estimatedCostMin      Float?                   @map("estimated_cost_min")
+  estimatedCostMax      Float?                   @map("estimated_cost_max")
+  reminderSet           Boolean                  @default(false) @map("reminder_set")
+  notifiedAt            DateTime?                @map("notified_at")
+  notes                 String?
+  completedAt           DateTime?
+  healthComponentKey    String?
+  healthValueBefore     Float?
+  healthReductionApplied Float?
+  customSlotId          String?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
 
   driver  Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
   vehicle Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
 
   @@index([driverId])
+  @@index([vehicleId, scheduledDate])
 }
 
 model MaintenanceRecord {

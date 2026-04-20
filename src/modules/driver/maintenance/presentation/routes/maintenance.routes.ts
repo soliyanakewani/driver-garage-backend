@@ -6,23 +6,31 @@ import {
   updateReminder,
   toggleReminder,
   deleteReminder,
+  markReminderDone,
   createRecord,
   listRecords,
   updateRecord,
   deleteRecord,
   listNotifications,
   markNotificationRead,
+  getMaintenanceCatalog,
+  getVehicleHealth,
 } from '../controllers/maintenance.controller';
 
 const router = Router();
 
 router.use(verifyDriverJWT);
 
+// Catalog & vehicle health (for dropdown + gauges)
+router.get('/catalog', getMaintenanceCatalog);
+router.get('/health/:vehicleId', getVehicleHealth);
+
 // Upcoming maintenance reminders
 router.post('/upcoming', createReminder);
 router.get('/upcoming', listReminders);
 router.patch('/upcoming/:id', updateReminder);
 router.patch('/upcoming/:id/reminder', toggleReminder);
+router.patch('/upcoming/:id/done', markReminderDone);
 router.delete('/upcoming/:id', deleteReminder);
 
 // Maintenance history records
