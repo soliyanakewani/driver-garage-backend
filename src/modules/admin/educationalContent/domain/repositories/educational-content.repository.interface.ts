@@ -7,7 +7,7 @@ export interface EducationContentRepository {
 
   findById(id: string): Promise<EducationContent | null>;
 
-  findAll(): Promise<EducationContent[]>;
+  findAll(category?: EducationCategory): Promise<EducationContent[]>;
 
   update(
     id: string,

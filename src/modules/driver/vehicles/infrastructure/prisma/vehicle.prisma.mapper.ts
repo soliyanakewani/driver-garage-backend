@@ -12,14 +12,14 @@ export function toPrismaCreateData(data: CreateVehicleData) {
     type: data.type,
     year: data.year,
     color: data.color,
-    vin: data.vin,
-    mileage: data.mileage,
-    fuelType: data.fuelType,
-    imageUrl: data.imageUrl,
-    insuranceDocumentUrl: data.insuranceDocumentUrl,
-    insuranceExpiresAt: data.insuranceExpiresAt,
-    registrationDocumentUrl: data.registrationDocumentUrl,
-    registrationExpiresAt: data.registrationExpiresAt,
+    ...(data.vin != null && { vin: data.vin }),
+    ...(data.mileage != null && { mileage: data.mileage }),
+    ...(data.fuelType != null && { fuelType: data.fuelType }),
+    ...(data.imageUrl != null && { imageUrl: data.imageUrl }),
+    ...(data.insuranceDocumentUrl != null && { insuranceDocumentUrl: data.insuranceDocumentUrl }),
+    ...(data.insuranceExpiresAt != null && { insuranceExpiresAt: data.insuranceExpiresAt }),
+    ...(data.registrationDocumentUrl != null && { registrationDocumentUrl: data.registrationDocumentUrl }),
+    ...(data.registrationExpiresAt != null && { registrationExpiresAt: data.registrationExpiresAt }),
   };
 }
 
