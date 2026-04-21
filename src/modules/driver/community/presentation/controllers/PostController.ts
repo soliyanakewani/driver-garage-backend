@@ -4,20 +4,51 @@ import { CreatePostUseCase } from "../../application/usecases/CreatePostUseCase"
 import { EditPostUseCase } from "../../application/usecases/EditPostUseCase";
 import { DeletePostUseCase } from "../../application/usecases/DeletePostUseCase";
 import { GetPostsUseCase } from "../../application/usecases/GetPostsUseCase";
+import { TogglePostLikeUseCase } from "../../application/usecases/TogglePostLikeUseCase";
+import { TogglePostBookmarkUseCase } from "../../application/usecases/TogglePostBookmarkUseCase";
+import { CreatePostCommentUseCase } from "../../application/usecases/CreatePostCommentUseCase";
+import { ListPostCommentsUseCase } from "../../application/usecases/ListPostCommentsUseCase";
+import { DeletePostCommentUseCase } from "../../application/usecases/DeletePostCommentUseCase";
+import { GetBookmarkedPostsUseCase } from "../../application/usecases/GetBookmarkedPostsUseCase";
+import { ReportPostUseCase } from "../../application/usecases/ReportPostUseCase";
 
 const repo = new PrismaPostRepository();
+const getPostsUseCase = new GetPostsUseCase(repo);
+const createPostUseCase = new CreatePostUseCase(repo);
+const editPostUseCase = new EditPostUseCase(repo);
+const deletePostUseCase = new DeletePostUseCase(repo);
+const togglePostLikeUseCase = new TogglePostLikeUseCase(repo);
+const togglePostBookmarkUseCase = new TogglePostBookmarkUseCase(repo);
+const createPostCommentUseCase = new CreatePostCommentUseCase(repo);
+const listPostCommentsUseCase = new ListPostCommentsUseCase(repo);
+const deletePostCommentUseCase = new DeletePostCommentUseCase(repo);
+const getBookmarkedPostsUseCase = new GetBookmarkedPostsUseCase(repo);
+const reportPostUseCase = new ReportPostUseCase(repo);
 
 export class PostController {
 
     static async getPosts(req: Request, res: Response) {
         try {
-            const useCase = new GetPostsUseCase(repo);
-
             const dto = {
                 page: req.query.page ? Number(req.query.page) : 1,
                 limit: req.query.limit ? Number(req.query.limit) : 10,
+                viewerId: req.user!.id,
             };
-            const posts = await useCase.execute(dto);
+            const posts = await getPostsUseCase.execute(dto);
+            res.json(posts);
+        } catch (err: any) {
+            res.status(400).json({ error: err.message });
+        }
+    }
+
+    static async getBookmarkedPosts(req: Request, res: Response) {
+        try {
+            const dto = {
+                page: req.query.page ? Number(req.query.page) : 1,
+                limit: req.query.limit ? Number(req.query.limit) : 10,
+                viewerId: req.user!.id,
+            };
+            const posts = await getBookmarkedPostsUseCase.execute(dto);
             res.json(posts);
         } catch (err: any) {
             res.status(400).json({ error: err.message });
@@ -26,15 +57,13 @@ export class PostController {
 
     static async createPost(req: Request, res: Response) {
         try {
-            const useCase = new CreatePostUseCase(repo);
-
             const dto = {
                 title: req.body.title,
                 content: req.body.content,
                 imageUrl: req.body.imageUrl,
                 authorId: req.user!.id,
             }
-            await useCase.execute(dto);
+            await createPostUseCase.execute(dto);
             res.json({ message: "Post created successfully" });
         } catch (err: any) {
             res.status(400).json({ error: err.message });
@@ -44,16 +73,15 @@ export class PostController {
 
     static async editPost(req: Request, res: Response) {
         try {
-            const useCase = new EditPostUseCase(repo);
-
             const dto = {
                 postId: String(req.params.id),
                 title: req.body.title,
+                content: req.body.content,
+                imageUrl: req.body.imageUrl,
                 authorId: req.user!.id,
-
             };
 
-            await useCase.execute(dto);
+            await editPostUseCase.execute(dto);
             res.json({ message: "Post updated successfully" });
         } catch (err: any) {
             res.status(400).json({ error: err.message });
@@ -62,15 +90,90 @@ export class PostController {
 
     static async deletePost(req: Request, res: Response) {
         try {
-            const useCase = new DeletePostUseCase(repo);
-
             const dto = {
                 postId: String(req.params.id),
                 authorId: req.user!.id,
             };
 
-            await useCase.execute(dto);
+            await deletePostUseCase.execute(dto);
             res.json({ message: "Post deleted successfully" });
+        } catch (err: any) {
+            res.status(400).json({ error: err.message });
+        }
+    }
+
+    static async toggleLike(req: Request, res: Response) {
+        try {
+            const response = await togglePostLikeUseCase.execute({
+                postId: String(req.params.id),
+                driverId: req.user!.id,
+            });
+            res.json(response);
+        } catch (err: any) {
+            res.status(400).json({ error: err.message });
+        }
+    }
+
+    static async toggleBookmark(req: Request, res: Response) {
+        try {
+            const response = await togglePostBookmarkUseCase.execute({
+                postId: String(req.params.id),
+                driverId: req.user!.id,
+            });
+            res.json(response);
+        } catch (err: any) {
+            res.status(400).json({ error: err.message });
+        }
+    }
+
+    static async getComments(req: Request, res: Response) {
+        try {
+            const comments = await listPostCommentsUseCase.execute({
+                postId: String(req.params.id),
+                viewerId: req.user!.id,
+            });
+            res.json(comments);
+        } catch (err: any) {
+            res.status(400).json({ error: err.message });
+        }
+    }
+
+    static async createComment(req: Request, res: Response) {
+        try {
+            const comment = await createPostCommentUseCase.execute({
+                postId: String(req.params.id),
+                driverId: req.user!.id,
+                content: String(req.body.content ?? ""),
+            });
+            res.status(201).json(comment);
+        } catch (err: any) {
+            res.status(400).json({ error: err.message });
+        }
+    }
+
+    static async deleteComment(req: Request, res: Response) {
+        try {
+            await deletePostCommentUseCase.execute({
+                postId: String(req.params.id),
+                commentId: String(req.params.commentId),
+                driverId: req.user!.id,
+            });
+            res.status(204).send();
+        } catch (err: any) {
+            const status = err.message === "Unauthorized" ? 403 : 400;
+            res.status(status).json({ error: err.message });
+        }
+    }
+
+    static async reportPost(req: Request, res: Response) {
+        try {
+            const report = await reportPostUseCase.execute({
+                postId: String(req.params.id),
+                reporterId: req.user!.id,
+                reason: String(req.body.reason ?? ""),
+                details: req.body.details ? String(req.body.details) : undefined,
+            });
+            res.status(201).json(report);
         } catch (err: any) {
             res.status(400).json({ error: err.message });
         }

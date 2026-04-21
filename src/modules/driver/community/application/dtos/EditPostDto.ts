@@ -3,5 +3,5 @@ export interface EditPostDto {
     title?: string;
     content?: string;
     authorId?: string;
-
+    imageUrl?: string;
 }
