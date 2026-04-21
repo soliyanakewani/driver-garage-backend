@@ -1,8 +1,9 @@
 export interface Post {
     id: string;
-    title: string;
+    title: string | null;
     authorId: string;
     imageUrl?: string;
+    imageUrls?: string[];
     content: string;
     createdAt: Date;
     updatedAt: Date;
@@ -16,9 +17,11 @@ export interface PostAuthorSummary {
 
 export interface PostFeedItem {
     id: string;
-    title: string;
+    /** Optional short headline; UI can default to first line of content when null. */
+    title: string | null;
     content: string;
-    imageUrl?: string;
+    /** All image URLs (legacy single `imageUrl` merged in for older rows). */
+    images: string[];
     createdAt: Date;
     updatedAt: Date;
     author: PostAuthorSummary;

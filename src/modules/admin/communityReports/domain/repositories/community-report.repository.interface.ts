@@ -9,9 +9,10 @@ export interface CommunityReportListItem {
   updatedAt: Date;
   post: {
     id: string;
-    title: string;
+    title: string | null;
     content: string;
     imageUrl: string | null;
+    imageUrls: string[];
     authorId: string;
     createdAt: Date;
   };

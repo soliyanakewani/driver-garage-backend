@@ -11,6 +11,7 @@ import { ListPostCommentsUseCase } from "../../application/usecases/ListPostComm
 import { DeletePostCommentUseCase } from "../../application/usecases/DeletePostCommentUseCase";
 import { GetBookmarkedPostsUseCase } from "../../application/usecases/GetBookmarkedPostsUseCase";
 import { ReportPostUseCase } from "../../application/usecases/ReportPostUseCase";
+import type { PostFeedFilter } from "../../application/dtos/GetPostsDto";
 
 const repo = new PrismaPostRepository();
 const getPostsUseCase = new GetPostsUseCase(repo);
@@ -25,14 +26,35 @@ const deletePostCommentUseCase = new DeletePostCommentUseCase(repo);
 const getBookmarkedPostsUseCase = new GetBookmarkedPostsUseCase(repo);
 const reportPostUseCase = new ReportPostUseCase(repo);
 
+function parseFeedFilter(raw: unknown): PostFeedFilter | undefined {
+    const v = String(raw ?? "")
+        .trim()
+        .toLowerCase();
+    if (!v || v === "all") return undefined;
+    if (v === "mine" || v === "favorites" || v === "bookmarks") return v;
+    throw new Error("filter must be all, mine, favorites, or bookmarks");
+}
+
+function parseImageUrlsBody(body: Record<string, unknown>): string[] | undefined {
+    if (body.imageUrls === undefined) return undefined;
+    if (Array.isArray(body.imageUrls)) {
+        return body.imageUrls.map((u) => String(u).trim()).filter(Boolean);
+    }
+    const single = String(body.imageUrls).trim();
+    return single ? [single] : [];
+}
+
 export class PostController {
 
     static async getPosts(req: Request, res: Response) {
         try {
+            const filter = parseFeedFilter(req.query.filter);
             const dto = {
                 page: req.query.page ? Number(req.query.page) : 1,
                 limit: req.query.limit ? Number(req.query.limit) : 10,
                 viewerId: req.user!.id,
+                q: req.query.q != null ? String(req.query.q) : undefined,
+                filter,
             };
             const posts = await getPostsUseCase.execute(dto);
             res.json(posts);
@@ -57,10 +79,12 @@ export class PostController {
 
     static async createPost(req: Request, res: Response) {
         try {
+            const body = req.body as Record<string, unknown>;
             const dto = {
-                title: req.body.title,
-                content: req.body.content,
-                imageUrl: req.body.imageUrl,
+                title: body.title != null ? String(body.title) : undefined,
+                content: String(body.content ?? ""),
+                imageUrl: body.imageUrl != null ? String(body.imageUrl) : undefined,
+                imageUrls: parseImageUrlsBody(body),
                 authorId: req.user!.id,
             }
             await createPostUseCase.execute(dto);
@@ -73,11 +97,13 @@ export class PostController {
 
     static async editPost(req: Request, res: Response) {
         try {
+            const body = req.body as Record<string, unknown>;
             const dto = {
                 postId: String(req.params.id),
-                title: req.body.title,
-                content: req.body.content,
-                imageUrl: req.body.imageUrl,
+                title: body.title !== undefined ? String(body.title) : undefined,
+                content: body.content !== undefined ? String(body.content) : undefined,
+                imageUrl: body.imageUrl !== undefined ? String(body.imageUrl) : undefined,
+                imageUrls: parseImageUrlsBody(body),
                 authorId: req.user!.id,
             };
 

@@ -48,14 +48,6 @@ export class GarageRepositoryImpl implements GarageRepository {
       data: { status: 'ACTIVE' },
     });
 
-    await prisma.garageNotification.create({
-      data: {
-        garageId: garage.id,
-        title: 'Profile approved',
-        body: 'Your garage profile has been approved by admin. You can now receive appointments.',
-      },
-    });
-
     return GaragePrismaMapper.toDomain(garage);
   }
 
@@ -63,14 +55,6 @@ export class GarageRepositoryImpl implements GarageRepository {
     const garage = await prisma.garage.update({
       where: { id },
       data: { status: 'REJECTED' },
-    });
-
-    await prisma.garageNotification.create({
-      data: {
-        garageId: garage.id,
-        title: 'Profile rejected',
-        body: 'Your garage profile was rejected by admin. Please review your details and resubmit.',
-      },
     });
 
     return GaragePrismaMapper.toDomain(garage);

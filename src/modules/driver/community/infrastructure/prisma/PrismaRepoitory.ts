@@ -1,15 +1,24 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
+import type { PostFeedFilter } from "../../application/dtos/GetPostsDto";
 import { PostRepository } from "../../domain/repositories/PostRepository";
 import { PostCommentView, PostFeedItem } from "../../domain/types/Post";
 
 const prisma = new PrismaClient();
 
+function mergePostImages(imageUrl: string | null, imageUrls: string[] | null | undefined): string[] {
+    const legacy = imageUrl ? [imageUrl] : [];
+    const extra = Array.isArray(imageUrls) ? imageUrls.filter(Boolean) : [];
+    const merged = [...legacy, ...extra];
+    return [...new Set(merged)];
+}
+
 export class PrismaPostRepository implements PostRepository {
     private mapFeedItem(raw: {
         id: string;
-        title: string;
+        title: string | null;
         content: string;
         imageUrl: string | null;
+        imageUrls: string[];
         createdAt: Date;
         updatedAt: Date;
         author: { id: string; firstName: string; lastName: string };
@@ -21,7 +30,7 @@ export class PrismaPostRepository implements PostRepository {
             id: raw.id,
             title: raw.title,
             content: raw.content,
-            imageUrl: raw.imageUrl ?? undefined,
+            images: mergePostImages(raw.imageUrl, raw.imageUrls),
             createdAt: raw.createdAt,
             updatedAt: raw.updatedAt,
             author: raw.author,
@@ -35,32 +44,58 @@ export class PrismaPostRepository implements PostRepository {
         };
     }
 
-    async findAll(page: number, limit: number, viewerId: string): Promise<PostFeedItem[]> {
-       const posts = await prisma.post.findMany({
-        orderBy: {
-            createdAt: 'desc',
-        },
-        skip: (page - 1) * limit,
-        take: limit,
-        include: {
-            author: {
-                select: { id: true, firstName: true, lastName: true },
-            },
-            _count: {
-                select: { likes: true, comments: true, bookmarks: true },
-            },
-            likes: {
-                where: { driverId: viewerId },
-                select: { id: true },
-            },
-            bookmarks: {
-                where: { driverId: viewerId },
-                select: { id: true },
-            },
-        },
-       });
+    async findAll(
+        page: number,
+        limit: number,
+        viewerId: string,
+        options?: { q?: string; filter?: PostFeedFilter }
+    ): Promise<PostFeedItem[]> {
+        const filter = options?.filter ?? "all";
+        const q = options?.q?.trim();
 
-       return posts.map((post) => this.mapFeedItem(post));
+        const and: Prisma.PostWhereInput[] = [];
+        if (q) {
+            and.push({
+                OR: [
+                    { title: { contains: q, mode: "insensitive" } },
+                    { content: { contains: q, mode: "insensitive" } },
+                ],
+            });
+        }
+        if (filter === "mine") {
+            and.push({ authorId: viewerId });
+        } else if (filter === "favorites") {
+            and.push({ likes: { some: { driverId: viewerId } } });
+        } else if (filter === "bookmarks") {
+            and.push({ bookmarks: { some: { driverId: viewerId } } });
+        }
+
+        const where: Prisma.PostWhereInput = and.length ? { AND: and } : {};
+
+        const posts = await prisma.post.findMany({
+            where,
+            orderBy: { createdAt: "desc" },
+            skip: (page - 1) * limit,
+            take: limit,
+            include: {
+                author: {
+                    select: { id: true, firstName: true, lastName: true },
+                },
+                _count: {
+                    select: { likes: true, comments: true, bookmarks: true },
+                },
+                likes: {
+                    where: { driverId: viewerId },
+                    select: { id: true },
+                },
+                bookmarks: {
+                    where: { driverId: viewerId },
+                    select: { id: true },
+                },
+            },
+        });
+
+        return posts.map((post) => this.mapFeedItem(post as any));
     }
 
     async findBookmarked(viewerId: string, page: number, limit: number): Promise<PostFeedItem[]> {
@@ -91,34 +126,36 @@ export class PrismaPostRepository implements PostRepository {
             },
         });
 
-        return bookmarks.map((item) => this.mapFeedItem(item.post));
+        return bookmarks.map((item) => this.mapFeedItem(item.post as any));
     }
 
     async createPost(data: {
-        title: string;
+        title?: string;
         content: string;
         authorId: string;
         imageUrl?: string;
+        imageUrls?: string[];
     }): Promise<void> {
+        const urls = mergePostImages(data.imageUrl ?? null, data.imageUrls ?? []);
 
         await prisma.post.create({
             data: {
-                title: data.title,
+                title: data.title?.trim() || null,
                 content: data.content,
                 authorId: data.authorId,
-                imageUrl: data.imageUrl
+                imageUrl: urls[0] ?? null,
+                imageUrls: urls,
             },
         });
-
     }
 
-
     async updatePost(
-        postId: string, 
-        title?: string, 
-        content?: string, 
-        authorId?: string, 
-        imageUrl?: string
+        postId: string,
+        title?: string,
+        content?: string,
+        authorId?: string,
+        imageUrl?: string,
+        imageUrls?: string[]
     ): Promise<void> {
         const post = await prisma.post.findUnique({
             where: { id: postId },
@@ -128,13 +165,22 @@ export class PrismaPostRepository implements PostRepository {
             throw new Error("Post not found or unauthorized");
         }
 
+        const data: Prisma.PostUpdateInput = {};
+        if (title !== undefined) data.title = title || null;
+        if (content !== undefined) data.content = content;
+        if (imageUrls !== undefined) {
+            const urls = mergePostImages(imageUrl ?? null, imageUrls);
+            data.imageUrls = urls;
+            data.imageUrl = urls[0] ?? null;
+        } else if (imageUrl !== undefined) {
+            const urls = mergePostImages(imageUrl, []);
+            data.imageUrls = urls;
+            data.imageUrl = urls[0] ?? null;
+        }
+
         await prisma.post.update({
             where: { id: postId },
-            data: {
-                ...(title !== undefined && { title }),
-                ...(content !== undefined && { content }),
-                ...(imageUrl !== undefined && { imageUrl }),     
-            },
+            data,
         });
     }
 
@@ -195,7 +241,12 @@ export class PrismaPostRepository implements PostRepository {
         return { bookmarked: true };
     }
 
-    async reportPost(postId: string, reporterId: string, reason: string, details?: string): Promise<{
+    async reportPost(
+        postId: string,
+        reporterId: string,
+        reason: string,
+        details?: string
+    ): Promise<{
         id: string;
         postId: string;
         reporterId: string;
@@ -306,5 +357,4 @@ export class PrismaPostRepository implements PostRepository {
 
         await prisma.postComment.delete({ where: { id: commentId } });
     }
-
 }

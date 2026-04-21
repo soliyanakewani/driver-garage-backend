@@ -313,19 +313,12 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
       include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
-    await Promise.all([
-      this.notifyDriver(
-        appointment.driverId,
-        'Appointment approved',
-        'Your appointment was approved by the garage.',
-        appointment.vehicleId
-      ),
-      this.notifyGarage(
-        garageId,
-        'Appointment approved',
-        `You approved appointment ${appointment.id}.`
-      ),
-    ]);
+    await this.notifyDriver(
+      appointment.driverId,
+      'Appointment approved',
+      'Your appointment was approved by the garage.',
+      appointment.vehicleId
+    );
 
     return mapFromPrisma(updated as any);
   }
@@ -340,19 +333,12 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
       include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
-    await Promise.all([
-      this.notifyDriver(
-        appointment.driverId,
-        'Appointment rejected',
-        'Your appointment was rejected by the garage.',
-        appointment.vehicleId
-      ),
-      this.notifyGarage(
-        garageId,
-        'Appointment rejected',
-        `You rejected appointment ${appointment.id}.`
-      ),
-    ]);
+    await this.notifyDriver(
+      appointment.driverId,
+      'Appointment rejected',
+      'Your appointment was rejected by the garage.',
+      appointment.vehicleId
+    );
 
     return mapFromPrisma(updated as any);
   }

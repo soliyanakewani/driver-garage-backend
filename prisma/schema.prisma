@@ -11,6 +11,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -297,9 +298,11 @@ model EducationContent {
 
 model Post {
   id        String   @id @default(uuid())
-  title     String
+  /// Optional display headline; search matches title + content (typical social apps index body text and optional title).
+  title     String?
   content   String
   imageUrl  String?
+  imageUrls String[] @default([])
   authorId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
