@@ -8,6 +8,7 @@ import {
   idParamValidator,
   searchQueryValidator
 } from "../validators/educational-content.validator";
+import { educationContentUploadIfMultipart } from "../../../../../core/middleware/upload.middleware";
 import { EducationContentRepositoryImpl } from "../../infrastructure/repositories/educational-content.repository";
 import { CreateEducationContentUseCase } from "../../application/usecases/create-education-content.usecase";
 import { DeleteEducationContentUseCase } from "../../application/usecases/delete-education-content.usecase";
@@ -41,8 +42,21 @@ router.use(adminAuthGuard);
 router.get("/", controller.getAll);
 router.get("/search", searchQueryValidator, validate, controller.search);
 router.get("/:id", idParamValidator, validate, controller.getById);
-router.post("/", createEducationContentValidator, validate, controller.create);
-router.put("/:id", idParamValidator, updateEducationContentValidator, validate, controller.update);
+router.post(
+  "/",
+  educationContentUploadIfMultipart,
+  createEducationContentValidator,
+  validate,
+  controller.create
+);
+router.put(
+  "/:id",
+  educationContentUploadIfMultipart,
+  idParamValidator,
+  updateEducationContentValidator,
+  validate,
+  controller.update
+);
 router.delete("/:id", idParamValidator, validate, controller.delete);
 
 export default router;

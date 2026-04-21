@@ -3,6 +3,7 @@ import { verifyDriverJWT } from '../../../../../core/middleware/auth/jwt.middlew
 import { validate } from '../../../../../core/middleware/validate.middleware';
 import {
   idParamValidator,
+  optionalCategoryQueryValidator,
   searchQueryValidator,
 } from '../../../../admin/educationalContent/presentation/validators/educational-content.validator';
 import { EducationContentRepositoryImpl } from '../../../../admin/educationalContent/infrastructure/repositories/educational-content.repository';
@@ -21,7 +22,7 @@ const controller = new DriverEducationController(
 const router = Router();
 router.use(verifyDriverJWT);
 
-router.get('/', controller.getAll);
+router.get('/', optionalCategoryQueryValidator, validate, controller.getAll);
 router.get('/search', searchQueryValidator, validate, controller.search);
 router.get('/:id', idParamValidator, validate, controller.getById);
 
