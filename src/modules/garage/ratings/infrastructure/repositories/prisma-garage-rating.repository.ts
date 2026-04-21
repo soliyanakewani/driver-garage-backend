@@ -1,35 +1,23 @@
 import { prisma } from '../../../../../infrastructure/prisma/prisma.client';
-import type { IGarageRatingRepository } from '../../domain/repositories/garage-rating.repository.interface';
+import type {
+  GarageRatingSummary,
+  IGarageRatingRepository,
+} from '../../domain/repositories/garage-rating.repository.interface';
 
 export class PrismaGarageRatingRepository implements IGarageRatingRepository {
-  async listByGarageId(garageId: string): Promise<unknown[]> {
-    return (prisma as any).garageRating.findMany({
-      where: { garageId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        driver: {
-          select: { id: true, firstName: true, lastName: true },
-        },
-        appointment: {
-          select: { id: true, scheduledAt: true, status: true },
-        },
-      },
-    });
-  }
+  async getSummary(garageId: string): Promise<GarageRatingSummary> {
+    const [aggregate, totalRatings] = await Promise.all([
+      prisma.garageRating.aggregate({
+        where: { garageId },
+        _avg: { rating: true },
+      }),
+      prisma.garageRating.count({ where: { garageId } }),
+    ]);
 
-  async getById(garageId: string, ratingId: string): Promise<unknown> {
-    const rating = await (prisma as any).garageRating.findFirst({
-      where: { id: ratingId, garageId },
-      include: {
-        driver: {
-          select: { id: true, firstName: true, lastName: true },
-        },
-        appointment: {
-          select: { id: true, scheduledAt: true, status: true },
-        },
-      },
-    });
-    if (!rating) throw new Error('Rating not found');
-    return rating;
+    const raw = aggregate._avg.rating;
+    const averageRating =
+      raw != null && totalRatings > 0 ? Math.round(raw * 10) / 10 : null;
+
+    return { averageRating, totalRatings };
   }
 }
