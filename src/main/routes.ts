@@ -22,6 +22,7 @@ import maintenanceRoutes from '../modules/driver/maintenance/presentation/routes
 import driverEducationRoutes from '../modules/driver/education/presentation/routes/driver-education.routes';
 import driverNotificationRoutes from '../modules/driver/notifications/presentation/routes/driver-notifications.routes';
 import adminCommunityReportRoutes from '../modules/admin/communityReports/presentation/routes/community-report.routes';
+import adminNotificationsRoutes from '../modules/admin/notifications/presentation/routes/admin-notifications.routes';
 
 
 const rootRouter = Router();
@@ -41,6 +42,7 @@ rootRouter.use('/admin/garages-approval', adminGarageApprovalRoutes);
 rootRouter.use("/admin", userManagementRoutes);
 rootRouter.use('/admin/educational-content', educationalContentRoutes);
 rootRouter.use('/admin/community/reports', adminCommunityReportRoutes);
+rootRouter.use('/admin/notifications', adminNotificationsRoutes);
 rootRouter.use('/driver/community/posts', postRoutes);
 rootRouter.use('/driver/maintenance', maintenanceRoutes);
 rootRouter.use('/driver/education', driverEducationRoutes);
