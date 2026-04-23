@@ -16,3 +16,17 @@ export const getRatingSummary = async (req: Request, res: Response) => {
     res.status(400).json({ error: message });
   }
 };
+
+export const getRatingSummaryByGarageId = async (req: Request, res: Response) => {
+  try {
+    const garageId = String(req.params.garageId ?? '').trim();
+    if (!garageId) {
+      return res.status(400).json({ error: 'garageId is required' });
+    }
+    const summary = await summaryUseCase.execute(garageId);
+    res.json(summary);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(400).json({ error: message });
+  }
+};

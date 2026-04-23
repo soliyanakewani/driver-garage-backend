@@ -1,10 +1,12 @@
 import { Router } from 'express';
-import { verifyGarageJWT } from '../../../../../core/middleware/auth/jwt.middleware';
-import { getRatingSummary } from '../controllers/garage-ratings.controller';
+import { verifyDriverJWT, verifyGarageJWT } from '../../../../../core/middleware/auth/jwt.middleware';
+import { getRatingSummary, getRatingSummaryByGarageId } from '../controllers/garage-ratings.controller';
 
 const router = Router();
 
-router.use(verifyGarageJWT);
-router.get('/', getRatingSummary);
+// Driver-facing endpoint to fetch rating summary for any garage card/profile.
+router.get('/:garageId/summary', verifyDriverJWT, getRatingSummaryByGarageId);
+// Garage-facing endpoint to fetch own rating summary.
+router.get('/', verifyGarageJWT, getRatingSummary);
 
 export default router;

@@ -276,12 +276,6 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
       },
     });
 
-    await this.notifyGarage(
-      appointment.garageId,
-      'New garage review',
-      `A driver submitted a ${input.rating}-star review.`
-    );
-
     return rating;
   }
 
