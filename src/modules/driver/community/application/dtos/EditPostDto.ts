@@ -3,5 +3,11 @@ export interface EditPostDto {
     title?: string;
     content?: string;
     authorId?: string;
+<<<<<<< Updated upstream
 
 }
+=======
+    /** @deprecated Prefer imageUrls */
+    imageUrls?: string[];
+}
+>>>>>>> Stashed changes
