@@ -6,6 +6,7 @@ import {
   getAppointment,
   rescheduleAppointment,
   cancelAppointment,
+  submitAppointmentReview,
 } from '../controllers/driver-appointment.controller';
 
 const router = Router();
@@ -17,5 +18,6 @@ router.get('/', listAppointments);
 router.get('/:id', getAppointment);
 router.patch('/:id/reschedule', rescheduleAppointment);
 router.patch('/:id/cancel', cancelAppointment);
+router.post('/:id/review', submitAppointmentReview);
 
 export default router;

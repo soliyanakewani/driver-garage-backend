@@ -1,33 +1,60 @@
 import { Request, Response } from 'express';
 import { PrismaGarageRatingRepository } from '../../infrastructure/repositories/prisma-garage-rating.repository';
-import { ListRatingsUseCase } from '../../application/usecases/list-ratings.usecase';
-import { GetRatingByIdUseCase } from '../../application/usecases/get-rating-by-id.usecase';
+import { GetGarageRatingSummaryUseCase } from '../../application/usecases/get-rating-summary.usecase';
+import { GetGarageRatingsAndReviewsUseCase } from '../../application/usecases/get-ratings-and-reviews.usecase';
 
 const repository = new PrismaGarageRatingRepository();
-const listUseCase = new ListRatingsUseCase(repository);
-const getByIdUseCase = new GetRatingByIdUseCase(repository);
+const summaryUseCase = new GetGarageRatingSummaryUseCase(repository);
+const ratingsAndReviewsUseCase = new GetGarageRatingsAndReviewsUseCase(repository);
 
-export const listRatings = async (req: Request, res: Response) => {
+export const getRatingSummary = async (req: Request, res: Response) => {
   try {
     const garageId = (req as any).user?.id as string;
     if (!garageId) return res.status(401).json({ error: 'Unauthorized' });
-    const ratings = await listUseCase.execute(garageId);
-    res.json(ratings);
+    const summary = await summaryUseCase.execute(garageId);
+    res.json(summary);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     res.status(400).json({ error: message });
   }
 };
 
-export const getRatingById = async (req: Request, res: Response) => {
+export const getRatingSummaryByGarageId = async (req: Request, res: Response) => {
+  try {
+    const garageId = String(req.params.garageId ?? '').trim();
+    if (!garageId) {
+      return res.status(400).json({ error: 'garageId is required' });
+    }
+    const summary = await summaryUseCase.execute(garageId);
+    res.json(summary);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(400).json({ error: message });
+  }
+};
+
+export const getRatingsAndReviewsForGarage = async (req: Request, res: Response) => {
   try {
     const garageId = (req as any).user?.id as string;
     if (!garageId) return res.status(401).json({ error: 'Unauthorized' });
-    const ratingId = String((req.params as any).ratingId);
-    const rating = await getByIdUseCase.execute(garageId, ratingId);
-    res.json(rating);
+    const data = await ratingsAndReviewsUseCase.execute(garageId);
+    res.json(data);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(message === 'Rating not found' ? 404 : 400).json({ error: message });
+    res.status(400).json({ error: message });
+  }
+};
+
+export const getRatingsAndReviewsByGarageId = async (req: Request, res: Response) => {
+  try {
+    const garageId = String(req.params.garageId ?? '').trim();
+    if (!garageId) {
+      return res.status(400).json({ error: 'garageId is required' });
+    }
+    const data = await ratingsAndReviewsUseCase.execute(garageId);
+    res.json(data);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(400).json({ error: message });
   }
 };

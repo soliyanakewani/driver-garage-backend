@@ -18,6 +18,12 @@ export interface IAppointmentRepository {
   rescheduleForDriver(id: string, driverId: string, newScheduledAt: Date): Promise<Appointment>;
 
   cancelForDriver(id: string, driverId: string): Promise<Appointment>;
+  submitReviewForCompletedAppointment(input: {
+    appointmentId: string;
+    driverId: string;
+    rating: number;
+    comment?: string;
+  }): Promise<unknown>;
 
   // Garage side
   findByGarage(garageId: string, status?: AppointmentStatus): Promise<Appointment[]>;

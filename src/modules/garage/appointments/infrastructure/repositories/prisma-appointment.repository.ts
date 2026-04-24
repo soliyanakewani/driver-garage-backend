@@ -58,6 +58,27 @@ function mapFromPrisma(model: PrismaAppointment): Appointment {
 }
 
 export class PrismaAppointmentRepository implements IAppointmentRepository {
+  private async notifyDriver(driverId: string, title: string, body: string, vehicleId?: string | null): Promise<void> {
+    await prisma.driverNotification.create({
+      data: {
+        driverId,
+        title,
+        body,
+        vehicleId: vehicleId ?? null,
+      },
+    });
+  }
+
+  private async notifyGarage(garageId: string, title: string, body: string): Promise<void> {
+    await prisma.garageNotification.create({
+      data: {
+        garageId,
+        title,
+        body,
+      },
+    });
+  }
+
   private async _findForDriver(id: string, driverId: string): Promise<PrismaAppointment | null> {
     return (await prisma.appointment.findFirst({
       where: { id, driverId },
@@ -123,6 +144,20 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
       include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
+    await Promise.all([
+      this.notifyGarage(
+        input.garageId,
+        'New appointment request',
+        `A driver requested an appointment for ${input.scheduledAt.toISOString()}.`
+      ),
+      this.notifyDriver(
+        input.driverId,
+        'Appointment booked',
+        'Your appointment request has been sent to the garage and is waiting approval.',
+        input.vehicleId
+      ),
+    ]);
+
     return mapFromPrisma(created as any);
   }
 
@@ -159,6 +194,20 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
       include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
+    await Promise.all([
+      this.notifyGarage(
+        appointment.garageId,
+        'Appointment rescheduled',
+        `A driver rescheduled appointment ${appointment.id} to ${newScheduledAt.toISOString()}.`
+      ),
+      this.notifyDriver(
+        driverId,
+        'Appointment rescheduled',
+        `Your appointment has been rescheduled to ${newScheduledAt.toISOString()}.`,
+        appointment.vehicleId
+      ),
+    ]);
+
     return mapFromPrisma(updated as any);
   }
 
@@ -175,7 +224,59 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
       include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
+    await Promise.all([
+      this.notifyGarage(
+        appointment.garageId,
+        'Appointment cancelled',
+        `Driver cancelled appointment ${appointment.id}.`
+      ),
+      this.notifyDriver(
+        driverId,
+        'Appointment cancelled',
+        'Your appointment has been cancelled.',
+        appointment.vehicleId
+      ),
+    ]);
+
     return mapFromPrisma(updated as any);
+  }
+
+  async submitReviewForCompletedAppointment(input: {
+    appointmentId: string;
+    driverId: string;
+    rating: number;
+    comment?: string;
+  }): Promise<unknown> {
+    if (input.rating < 1 || input.rating > 5) {
+      throw new Error('Rating must be between 1 and 5');
+    }
+
+    const appointment = await prisma.appointment.findFirst({
+      where: { id: input.appointmentId, driverId: input.driverId },
+      select: { id: true, garageId: true, status: true },
+    });
+
+    if (!appointment) throw new Error('Appointment not found');
+    if (appointment.status !== 'COMPLETED') {
+      throw new Error('You can review only after service is completed');
+    }
+
+    const rating = await prisma.garageRating.upsert({
+      where: { appointmentId: appointment.id },
+      update: {
+        rating: input.rating,
+        comment: input.comment?.trim() || null,
+      },
+      create: {
+        appointmentId: appointment.id,
+        garageId: appointment.garageId,
+        driverId: input.driverId,
+        rating: input.rating,
+        comment: input.comment?.trim() || null,
+      },
+    });
+
+    return rating;
   }
 
   async findByGarage(garageId: string, status?: AppointmentStatus): Promise<Appointment[]> {
@@ -206,6 +307,13 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
       include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
 
+    await this.notifyDriver(
+      appointment.driverId,
+      'Appointment approved',
+      'Your appointment was approved by the garage.',
+      appointment.vehicleId
+    );
+
     return mapFromPrisma(updated as any);
   }
 
@@ -218,6 +326,13 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
       data: { status: 'REJECTED' },
       include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
+
+    await this.notifyDriver(
+      appointment.driverId,
+      'Appointment rejected',
+      'Your appointment was rejected by the garage.',
+      appointment.vehicleId
+    );
 
     return mapFromPrisma(updated as any);
   }
@@ -235,6 +350,21 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
       data: { status: DOMAIN_TO_PRISMA_STATUS[status] },
       include: { appointmentServices: { include: { garageService: { select: { name: true } } } } },
     });
+
+    const statusLabel = DOMAIN_TO_PRISMA_STATUS[status].replace('_', ' ');
+    await Promise.all([
+      this.notifyDriver(
+        appointment.driverId,
+        `Service status updated: ${statusLabel}`,
+        `Your service appointment is now ${statusLabel}.`,
+        appointment.vehicleId
+      ),
+      this.notifyGarage(
+        garageId,
+        `Service status updated: ${statusLabel}`,
+        `Appointment ${appointment.id} is now ${statusLabel}.`
+      ),
+    ]);
 
     return mapFromPrisma(updated as any);
   }
