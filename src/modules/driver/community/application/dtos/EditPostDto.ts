@@ -4,5 +4,7 @@ export interface EditPostDto {
     content?: string;
     authorId?: string;
     /** @deprecated Prefer imageUrls */
+    imageUrl?: string;
+    /** Preferred input for multiple images */
     imageUrls?: string[];
 }

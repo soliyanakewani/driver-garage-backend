@@ -35,7 +35,7 @@ function parseFeedFilter(raw: unknown): PostFeedFilter | undefined {
     throw new Error("filter must be all, mine, favorites, or bookmarks");
 }
 
-/* function parseImageUrlsBody(body: Record<string, unknown>): string[] | undefined {
+function parseImageUrlsBody(body: Record<string, unknown>): string[] | undefined {
     if (body.imageUrls === undefined) return undefined;
     if (Array.isArray(body.imageUrls)) {
         return body.imageUrls.map((u) => String(u).trim()).filter(Boolean);
@@ -43,7 +43,12 @@ function parseFeedFilter(raw: unknown): PostFeedFilter | undefined {
     const single = String(body.imageUrls).trim();
     return single ? [single] : [];
 }
-*/
+
+function mergeImageUrls(uploaded: string[], bodyUrls?: string[]): string[] | undefined {
+    const merged = [...uploaded, ...(bodyUrls ?? [])].filter(Boolean);
+    const unique = [...new Set(merged)];
+    return unique.length ? unique : undefined;
+}
 export class PostController {
 
     static async getPosts(req: Request, res: Response) {
@@ -79,14 +84,17 @@ export class PostController {
 
     static async createPost(req: Request, res: Response) {
         try {
+            const body = req.body as Record<string, unknown>;
             const files = req.files as Express.Multer.File[];
-
-            const imageUrls = files?.map(
+            const uploadedUrls = files?.map(
                 (file) => `/uploads/${file.filename}`
             ) || [];
+            const bodyUrls = parseImageUrlsBody(body);
+            const imageUrls = mergeImageUrls(uploadedUrls, bodyUrls);
             const dto = {
-                title: req.body.title != null ? String(req.body.title) : undefined,
-                content: String(req.body.content ?? ""),
+                title: body.title != null ? String(body.title) : undefined,
+                content: String(body.content ?? ""),
+                imageUrl: body.imageUrl != null ? String(body.imageUrl) : undefined,
                 imageUrls,
                 authorId: req.user!.id,
             };
@@ -100,16 +108,19 @@ export class PostController {
 
     static async editPost(req: Request, res: Response) {
         try {
+            const body = req.body as Record<string, unknown>;
             const files = req.files as Express.Multer.File[];
-
-            const imageUrls = files?.map(
+            const uploadedUrls = files?.map(
                 (file) => `/uploads/${file.filename}`
             ) || [];
+            const bodyUrls = parseImageUrlsBody(body);
+            const imageUrls = mergeImageUrls(uploadedUrls, bodyUrls);
             const dto = {
                 postId: String(req.params.id),
-                title: req.body.title !== undefined ? String(req.body.title) : undefined,
-                content: req.body.content !== undefined ? String(req.body.content) : undefined,
-                imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
+                title: body.title !== undefined ? String(body.title) : undefined,
+                content: body.content !== undefined ? String(body.content) : undefined,
+                imageUrl: body.imageUrl !== undefined ? String(body.imageUrl) : undefined,
+                imageUrls,
                 authorId: req.user!.id,
             };
 

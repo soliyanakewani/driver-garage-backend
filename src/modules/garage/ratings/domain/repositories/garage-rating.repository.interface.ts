@@ -5,6 +5,25 @@ export interface GarageRatingSummary {
   totalRatings: number;
 }
 
+export interface GarageReviewItem {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: Date;
+  driver: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export interface GarageRatingsAndReviews {
+  averageRating: number | null;
+  totalRatings: number;
+  reviews: GarageReviewItem[];
+}
+
 export interface IGarageRatingRepository {
   getSummary(garageId: string): Promise<GarageRatingSummary>;
+  getRatingsAndReviews(garageId: string): Promise<GarageRatingsAndReviews>;
 }
