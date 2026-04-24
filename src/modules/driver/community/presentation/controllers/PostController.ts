@@ -35,7 +35,7 @@ function parseFeedFilter(raw: unknown): PostFeedFilter | undefined {
     throw new Error("filter must be all, mine, favorites, or bookmarks");
 }
 
-function parseImageUrlsBody(body: Record<string, unknown>): string[] | undefined {
+/* function parseImageUrlsBody(body: Record<string, unknown>): string[] | undefined {
     if (body.imageUrls === undefined) return undefined;
     if (Array.isArray(body.imageUrls)) {
         return body.imageUrls.map((u) => String(u).trim()).filter(Boolean);
@@ -43,7 +43,7 @@ function parseImageUrlsBody(body: Record<string, unknown>): string[] | undefined
     const single = String(body.imageUrls).trim();
     return single ? [single] : [];
 }
-
+*/
 export class PostController {
 
     static async getPosts(req: Request, res: Response) {
@@ -79,14 +79,17 @@ export class PostController {
 
     static async createPost(req: Request, res: Response) {
         try {
-            const body = req.body as Record<string, unknown>;
+            const files = req.files as Express.Multer.File[];
+
+            const imageUrls = files?.map(
+                (file) => `/uploads/${file.filename}`
+            ) || [];
             const dto = {
-                title: body.title != null ? String(body.title) : undefined,
-                content: String(body.content ?? ""),
-                imageUrl: body.imageUrl != null ? String(body.imageUrl) : undefined,
-                imageUrls: parseImageUrlsBody(body),
+                title: req.body.title != null ? String(req.body.title) : undefined,
+                content: String(req.body.content ?? ""),
+                imageUrls,
                 authorId: req.user!.id,
-            }
+            };
             await createPostUseCase.execute(dto);
             res.json({ message: "Post created successfully" });
         } catch (err: any) {
@@ -97,13 +100,16 @@ export class PostController {
 
     static async editPost(req: Request, res: Response) {
         try {
-            const body = req.body as Record<string, unknown>;
+            const files = req.files as Express.Multer.File[];
+
+            const imageUrls = files?.map(
+                (file) => `/uploads/${file.filename}`
+            ) || [];
             const dto = {
                 postId: String(req.params.id),
-                title: body.title !== undefined ? String(body.title) : undefined,
-                content: body.content !== undefined ? String(body.content) : undefined,
-                imageUrl: body.imageUrl !== undefined ? String(body.imageUrl) : undefined,
-                imageUrls: parseImageUrlsBody(body),
+                title: req.body.title !== undefined ? String(req.body.title) : undefined,
+                content: req.body.content !== undefined ? String(req.body.content) : undefined,
+                imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
                 authorId: req.user!.id,
             };
 

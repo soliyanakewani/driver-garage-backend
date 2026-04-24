@@ -21,24 +21,26 @@ export class EditPostUseCase {
         if (
             dto.title === undefined &&
             dto.content === undefined &&
-            dto.imageUrl === undefined &&
             dto.imageUrls === undefined
         ) {
             throw new Error("At least one field must be provided");
         }
 
-        const imagePayload =
+       /* const imagePayload =
             dto.imageUrl !== undefined || dto.imageUrls !== undefined
                 ? normalizeImageUrls(dto.imageUrl, dto.imageUrls)
                 : undefined;
+                */
 
         await this.postRepository.updatePost(
             dto.postId,
             dto.title?.trim(),
             dto.content?.trim(),
             dto.authorId,
-            imagePayload?.[0],
-            imagePayload
+            undefined,
+            dto.imageUrls
+          //  imagePayload?.[0],
+           // imagePayload
         );
     }
 }
