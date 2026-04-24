@@ -5,4 +5,5 @@ export interface UpdateEducationContentDto {
   description?: string;
   category?: EducationCategory;
   image?: string | null;
+  pdf?: string | null;
 }

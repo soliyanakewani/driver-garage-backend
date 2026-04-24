@@ -284,6 +284,7 @@ enum EducationCategory {
   MAINTENANCE
   REPAIRS
   TIPS
+  MANUALS
 }
 
 model EducationContent {
@@ -292,6 +293,8 @@ model EducationContent {
   description String
   category    EducationCategory
   imageUrl    String?
+  /// PDF document URL for MANUALS category (uploaded by admin)
+  pdfUrl      String?           @map("pdf_url")
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 }

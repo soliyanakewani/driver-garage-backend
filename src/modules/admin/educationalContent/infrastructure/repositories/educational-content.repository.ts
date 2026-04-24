@@ -52,8 +52,9 @@ export class EducationContentRepositoryImpl
     return record ? EducationContentPrismaMapper.toDomain(record) : null;
   }
 
-  async findAll(): Promise<EducationContent[]> {
+  async findAll(category?: EducationCategory): Promise<EducationContent[]> {
     const records = await prisma.educationContent.findMany({
+      where: category ? { category } : undefined,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -66,7 +67,7 @@ export class EducationContentRepositoryImpl
   ): Promise<EducationContent> {
     const updated = await prisma.educationContent.update({
       where: { id },
-      data: EducationContentPrismaMapper.toPrisma(data as any),
+      data: EducationContentPrismaMapper.toPrismaUpdate(data),
     });
 
     return EducationContentPrismaMapper.toDomain(updated);
