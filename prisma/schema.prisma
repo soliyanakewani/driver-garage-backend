@@ -271,6 +271,7 @@ enum EducationCategory {
   MAINTENANCE
   REPAIRS
   TIPS
+  MANUALS
 }
 
 model EducationContent {

@@ -4,6 +4,7 @@ export enum EducationCategory {
   MAINTENANCE = 'MAINTENANCE',
   REPAIRS = 'REPAIRS',
   TIPS = 'TIPS',
+  MANUALS = 'MANUALS',
 }
 
 export interface EducationContent {
