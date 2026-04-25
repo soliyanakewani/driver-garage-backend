@@ -1,19 +1,50 @@
 import { prisma } from '../../../../../infrastructure/prisma/prisma.client';
-import type { IGarageRatingRepository } from '../../domain/repositories/garage-rating.repository.interface';
+import type {
+  GarageRatingsAndReviews,
+  GarageRatingSummary,
+  IGarageRatingRepository,
+} from '../../domain/repositories/garage-rating.repository.interface';
 
 export class PrismaGarageRatingRepository implements IGarageRatingRepository {
-  async listByGarageId(garageId: string): Promise<unknown[]> {
-    return (prisma as any).garageRating.findMany({
-      where: { garageId },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getSummary(garageId: string): Promise<GarageRatingSummary> {
+    const [aggregate, totalRatings] = await Promise.all([
+      prisma.garageRating.aggregate({
+        where: { garageId },
+        _avg: { rating: true },
+      }),
+      prisma.garageRating.count({ where: { garageId } }),
+    ]);
+
+    const raw = aggregate._avg.rating;
+    const averageRating =
+      raw != null && totalRatings > 0 ? Math.round(raw * 10) / 10 : null;
+
+    return { averageRating, totalRatings };
   }
 
-  async getById(garageId: string, ratingId: string): Promise<unknown> {
-    const rating = await (prisma as any).garageRating.findFirst({
-      where: { id: ratingId, garageId },
-    });
-    if (!rating) throw new Error('Rating not found');
-    return rating;
+  async getRatingsAndReviews(garageId: string): Promise<GarageRatingsAndReviews> {
+    const [summary, reviews] = await Promise.all([
+      this.getSummary(garageId),
+      prisma.garageRating.findMany({
+        where: { garageId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          driver: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      ...summary,
+      reviews: reviews.map((review) => ({
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.createdAt,
+        driver: review.driver,
+      })),
+    };
   }
 }

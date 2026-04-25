@@ -29,7 +29,25 @@ export class PrismaGarageProfileRepository implements IGarageProfileRepository {
       },
     });
     if (!garage) throw new Error('Garage not found');
-    return garage;
+
+    const [aggregate, totalRatings] = await Promise.all([
+      prisma.garageRating.aggregate({
+        where: { garageId },
+        _avg: { rating: true },
+      }),
+      prisma.garageRating.count({ where: { garageId } }),
+    ]);
+    const raw = aggregate._avg.rating;
+    const averageRating =
+      raw != null && totalRatings > 0 ? Math.round(raw * 10) / 10 : null;
+
+    return {
+      ...garage,
+      rating: {
+        averageRating,
+        totalRatings,
+      },
+    };
   }
 
   async update(garageId: string, data: GarageProfileUpdateData): Promise<unknown> {
@@ -77,6 +95,24 @@ export class PrismaGarageProfileRepository implements IGarageProfileRepository {
         },
       },
     });
-    return updated;
+
+    const [aggregate, totalRatings] = await Promise.all([
+      prisma.garageRating.aggregate({
+        where: { garageId },
+        _avg: { rating: true },
+      }),
+      prisma.garageRating.count({ where: { garageId } }),
+    ]);
+    const raw = aggregate._avg.rating;
+    const averageRating =
+      raw != null && totalRatings > 0 ? Math.round(raw * 10) / 10 : null;
+
+    return {
+      ...updated,
+      rating: {
+        averageRating,
+        totalRatings,
+      },
+    };
   }
 }

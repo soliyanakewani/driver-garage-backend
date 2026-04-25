@@ -53,6 +53,12 @@ model Driver {
   maintenanceReminders MaintenanceReminder[]
   maintenanceRecords   MaintenanceRecord[]
   notifications        DriverNotification[]
+  garageRatings        GarageRating[]
+  posts                Post[]
+  postLikes            PostLike[]
+  postComments         PostComment[]
+  postBookmarks        PostBookmark[]
+  postReports          PostReport[]
 }
 
 model Vehicle {
@@ -133,13 +139,18 @@ model GarageRating {
   id        String   @id @default(uuid())
   garageId  String
   driverId  String
+  appointmentId String? @unique
   rating    Int      // 1-5
   comment   String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   garage    Garage   @relation(fields: [garageId], references: [id], onDelete: Cascade)
+  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
 
   @@index([garageId])
+  @@index([driverId])
 }
 
 model GarageService {
@@ -202,6 +213,7 @@ model Appointment {
   garage             Garage            @relation(fields: [garageId], references: [id], onDelete: Cascade)
   vehicle            Vehicle?          @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
   appointmentServices AppointmentService[]
+  ratings            GarageRating[]
 
   @@index([driverId, scheduledAt])
   @@index([garageId, scheduledAt])
@@ -281,17 +293,85 @@ model EducationContent {
   description String
   category    EducationCategory
   imageUrl    String?
+  /// PDF document URL for MANUALS category (uploaded by admin)
+  pdfUrl      String?           @map("pdf_url")
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 }
 
 model Post {
-  id        String  @id @default(uuid())
-  title     String 
+  id        String   @id @default(uuid())
+  /// Optional display headline; search matches title + content (typical social apps index body text and optional title).
+  title     String?
   content   String
-  imageUrl  String? 
+  imageUrl  String?
+  imageUrls String[] @default([])
   authorId  String
-  createdAt DateTime @default(now()) 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author    Driver   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes     PostLike[]
+  comments  PostComment[]
+  bookmarks PostBookmark[]
+  reports   PostReport[]
+
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model PostLike {
+  id        String   @id @default(uuid())
+  postId    String
+  driverId  String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, driverId])
+  @@index([driverId])
+}
+
+model PostComment {
+  id        String   @id @default(uuid())
+  postId    String
+  driverId  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@index([driverId])
+}
+
+model PostBookmark {
+  id        String   @id @default(uuid())
+  postId    String
+  driverId  String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, driverId])
+  @@index([driverId])
+}
+
+model PostReport {
+  id          String   @id @default(uuid())
+  postId       String
+  reporterId   String
+  reason       String
+  details      String?
+  status       String   @default("PENDING")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reporter     Driver   @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, reporterId])
+  @@index([reporterId])
+  @@index([status])
 }
 
 model MaintenanceReminder {
