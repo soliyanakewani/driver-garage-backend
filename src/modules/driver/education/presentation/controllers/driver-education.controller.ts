@@ -3,6 +3,7 @@ import { GetAllEducationContentUseCase } from '../../../../admin/educationalCont
 import { GetEducationContentByIdUseCase } from '../../../../admin/educationalContent/application/usecases/get-education-content-by-id.usecase';
 import { SearchEducationContentUseCase } from '../../../../admin/educationalContent/application/usecases/search-education-content.usecase';
 import { EducationContentMapper } from '../../../../admin/educationalContent/infrastructure/mappers/educational-content.mapper';
+import { EducationCategory } from '../../../../admin/educationalContent/domain/entities/educational-content.entity';
 
 export class DriverEducationController {
   constructor(
@@ -11,8 +12,13 @@ export class DriverEducationController {
     private readonly searchUseCase: SearchEducationContentUseCase
   ) {}
 
-  getAll = async (_req: Request, res: Response) => {
-    const contents = await this.getAllUseCase.execute();
+  getAll = async (req: Request, res: Response) => {
+    const raw = req.query.category;
+    const cat =
+      typeof raw === 'string' && Object.values(EducationCategory).includes(raw as EducationCategory)
+        ? (raw as EducationCategory)
+        : undefined;
+    const contents = await this.getAllUseCase.execute(cat);
     res.json(EducationContentMapper.toResponseList(contents));
   };
 
@@ -21,8 +27,13 @@ export class DriverEducationController {
     if (!id || Array.isArray(id)) {
       return res.status(400).json({ message: 'Invalid id parameter' });
     }
-    const content = await this.getByIdUseCase.execute(id);
-    res.json(EducationContentMapper.toResponse(content));
+    try {
+      const content = await this.getByIdUseCase.execute(id);
+      res.json(EducationContentMapper.toResponse(content));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Not found';
+      res.status(404).json({ message });
+    }
   };
 
   search = async (req: Request, res: Response) => {

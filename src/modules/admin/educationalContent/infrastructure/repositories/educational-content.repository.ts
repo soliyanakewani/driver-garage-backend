@@ -13,6 +13,34 @@ export class EducationContentRepositoryImpl
       data: EducationContentPrismaMapper.toPrisma(data),
     });
 
+    const activeDrivers = await prisma.driver.findMany({
+      where: { status: 'ACTIVE' },
+      select: { id: true },
+    });
+    const activeGarages = await prisma.garage.findMany({
+      where: { status: 'ACTIVE' },
+      select: { id: true },
+    });
+
+    if (activeDrivers.length > 0) {
+      await prisma.driverNotification.createMany({
+        data: activeDrivers.map((driver) => ({
+          driverId: driver.id,
+          title: `New education content: ${created.title}`,
+          body: `A new ${created.category} education article has been published.`,
+        })),
+      });
+    }
+    if (activeGarages.length > 0) {
+      await prisma.garageNotification.createMany({
+        data: activeGarages.map((garage) => ({
+          garageId: garage.id,
+          title: `New education content: ${created.title}`,
+          body: `A new ${created.category} education article was published for platform users.`,
+        })),
+      });
+    }
+
     return EducationContentPrismaMapper.toDomain(created);
   }
 
@@ -24,8 +52,9 @@ export class EducationContentRepositoryImpl
     return record ? EducationContentPrismaMapper.toDomain(record) : null;
   }
 
-  async findAll(): Promise<EducationContent[]> {
+  async findAll(category?: EducationCategory): Promise<EducationContent[]> {
     const records = await prisma.educationContent.findMany({
+      where: category ? { category } : undefined,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -38,7 +67,7 @@ export class EducationContentRepositoryImpl
   ): Promise<EducationContent> {
     const updated = await prisma.educationContent.update({
       where: { id },
-      data: EducationContentPrismaMapper.toPrisma(data as any),
+      data: EducationContentPrismaMapper.toPrismaUpdate(data),
     });
 
     return EducationContentPrismaMapper.toDomain(updated);

@@ -9,6 +9,7 @@ export class EducationContentMapper {
       description: raw.description,
       category: (raw.category as EducationCategory) ?? EducationCategory.ALL,
       image: raw.imageUrl,
+      pdf: raw.pdfUrl ?? null,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
     };
@@ -24,6 +25,7 @@ export class EducationContentMapper {
       description: entity.description,
       category: entity.category,
       imageUrl: entity.image,
+      pdfUrl: entity.pdf,
     };
   }
 
@@ -34,6 +36,7 @@ export class EducationContentMapper {
       description: entity.description,
       category: entity.category,
       image: entity.image,
+      pdf: entity.pdf,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };

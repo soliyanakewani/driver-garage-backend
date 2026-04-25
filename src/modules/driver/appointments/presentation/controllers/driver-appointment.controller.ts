@@ -10,6 +10,8 @@ import { RescheduleAppointmentRequestDto } from '../../application/dto/reschedul
 import { ListAppointmentsQueryDto } from '../../application/dto/list-appointments-query.dto';
 import { AppointmentResponseDto } from '../../application/dto/appointment-response.dto';
 import { prisma } from '../../../../../infrastructure/prisma/prisma.client';
+import { SubmitReviewDto } from '../../application/dto/submit-review.dto';
+import { SubmitAppointmentReviewUseCase } from '../../application/usecases/submit-appointment-review.usecase';
 
 const repository = new PrismaAppointmentRepository();
 const bookUseCase = new BookGarageAppointmentUseCase(repository);
@@ -17,6 +19,7 @@ const listUseCase = new ListDriverAppointmentsUseCase(repository);
 const getUseCase = new GetDriverAppointmentUseCase(repository);
 const rescheduleUseCase = new RescheduleAppointmentUseCase(repository);
 const cancelUseCase = new CancelAppointmentUseCase(repository);
+const submitReviewUseCase = new SubmitAppointmentReviewUseCase(repository);
 
 async function enrichAppointment(
   appt: Awaited<ReturnType<typeof getUseCase.execute>>
@@ -125,5 +128,26 @@ export const cancelAppointment = async (req: Request, res: Response) => {
   } catch (err: any) {
     const code = err.message === 'Appointment not found' ? 404 : 400;
     res.status(code).json({ error: err.message });
+  }
+};
+
+export const submitAppointmentReview = async (req: Request, res: Response) => {
+  try {
+    const driverId = (req as any).user.id as string;
+    const appointmentId = String((req.params as any).id);
+    const dto = SubmitReviewDto.from(req.body);
+
+    const review = await submitReviewUseCase.execute({
+      appointmentId,
+      driverId,
+      rating: dto.rating,
+      comment: dto.comment,
+    });
+
+    res.status(201).json(review);
+  } catch (err: any) {
+    const message = err.message ?? 'Failed to submit review';
+    const status = message.includes('not found') ? 404 : 400;
+    res.status(status).json({ error: message });
   }
 };

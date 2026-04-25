@@ -6,6 +6,7 @@ export interface EducationContentResponseDto {
   description: string;
   category: EducationCategory;
   image?: string | null;
+  pdf?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
