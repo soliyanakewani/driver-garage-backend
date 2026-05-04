@@ -6,6 +6,22 @@ import { extractGarageBusinessDocumentUrl } from '../../common/extract-business-
 const service = new GarageAuthService();
 
 function authError(err: unknown): { message: string; status: number } {
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === 'P2002') {
+      const target = (err.meta?.target as string[] | undefined)?.[0];
+      if (target === 'email') return { message: 'Email already registered', status: 409 };
+      if (target === 'phone') return { message: 'Phone number already registered', status: 409 };
+      return { message: 'A record with this value already exists', status: 409 };
+    }
+    // Table/column missing — migrations not applied on this database
+    if (err.code === 'P2021' || err.code === 'P2022') {
+      return {
+        message:
+          'Server database is missing required tables or columns. Run `npx prisma migrate deploy` against the production database (Render release phase or one-off shell).',
+        status: 503,
+      };
+    }
+  }
   if (err instanceof Error) {
     const msg = err.message.toLowerCase();
     if (msg.includes('email is not configured') || msg.includes('not configured')) {
@@ -22,13 +38,16 @@ function authError(err: unknown): { message: string; status: number } {
       msg.includes('email verification expired')
     )
       return { message: err.message, status: 400 };
-  }
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    if (err.code === 'P2002') {
-      const target = (err.meta?.target as string[] | undefined)?.[0];
-      if (target === 'email') return { message: 'Email already registered', status: 409 };
-      if (target === 'phone') return { message: 'Phone number already registered', status: 409 };
-      return { message: 'A record with this value already exists', status: 409 };
+    // SMTP / relay failures from nodemailer
+    if (
+      msg.includes('eauth') ||
+      msg.includes('invalid login') ||
+      msg.includes('authentication failed') ||
+      msg.includes('econnection') ||
+      msg.includes('etimedout') ||
+      msg.includes('greeting never received')
+    ) {
+      return { message: `Email delivery failed: ${err.message}`, status: 503 };
     }
   }
   return { message: 'Something went wrong. Please try again.', status: 400 };
@@ -122,6 +141,7 @@ export const sendOtp = async (req: Request, res: Response) => {
     const result = await service.sendOtp(email);
     res.json(result);
   } catch (err: unknown) {
+    console.error('[garages/auth/send-otp]', err);
     const { message, status } = authError(err);
     return res.status(status).json({ error: message });
   }
