@@ -1,4 +1,21 @@
 import nodemailer from 'nodemailer';
+import { MailSendError } from './mail-send.error';
+
+function formatSmtpFailure(e: unknown): string {
+  if (e instanceof Error) {
+    const ne = e as Error & {
+      response?: string;
+      responseCode?: number;
+      command?: string;
+    };
+    const parts = [ne.message];
+    if (ne.response) parts.push(String(ne.response));
+    if (ne.responseCode != null) parts.push(`smtp=${ne.responseCode}`);
+    if (ne.command) parts.push(`cmd=${ne.command}`);
+    return parts.filter(Boolean).join(' | ');
+  }
+  return String(e);
+}
 
 /** Strip accidental line breaks (common when pasting secrets into Render multiline fields). */
 function smtpEnv(key: 'SMTP_HOST' | 'SMTP_PORT' | 'SMTP_USER' | 'SMTP_PASS' | 'MAIL_FROM'): string {
@@ -47,11 +64,16 @@ export async function sendGarageSignupOtpEmail(to: string, code: string): Promis
   });
 
   console.log('[garage-otp] smtp sendMail start');
-  await transporter.sendMail({
-    from: smtpEnv('MAIL_FROM'),
-    to,
-    subject,
-    text,
-  });
+  try {
+    await transporter.sendMail({
+      from: smtpEnv('MAIL_FROM'),
+      to,
+      subject,
+      text,
+    });
+  } catch (e: unknown) {
+    console.error('[garage-otp] smtp sendMail failed', formatSmtpFailure(e));
+    throw new MailSendError(`Email delivery failed: ${formatSmtpFailure(e)}`, { cause: e });
+  }
   console.log('[garage-otp] smtp sendMail done');
 }

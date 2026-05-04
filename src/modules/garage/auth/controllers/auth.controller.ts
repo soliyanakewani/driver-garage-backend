@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
+import { MailSendError } from '../../../../infrastructure/email/mail-send.error';
 import { GarageAuthService } from '../services/auth.service';
 import { extractGarageBusinessDocumentUrl } from '../../common/extract-business-document-url';
 
@@ -52,6 +53,9 @@ function authError(err: unknown): { message: string; status: number } {
         'Database engine error. Ensure migrations ran (GarageSignupOtp) and DATABASE_URL is correct.',
       status: 503,
     };
+  }
+  if (err instanceof MailSendError) {
+    return { message: err.message, status: 503 };
   }
   if (err instanceof Error) {
     const msg = err.message.toLowerCase();
