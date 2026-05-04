@@ -46,9 +46,19 @@ function authError(err: unknown): { message: string; status: number } {
       status: 500,
     };
   }
+  if (err instanceof Prisma.PrismaClientUnknownRequestError) {
+    return {
+      message:
+        'Database engine error. Ensure migrations ran (GarageSignupOtp) and DATABASE_URL is correct.',
+      status: 503,
+    };
+  }
   if (err instanceof Error) {
     const msg = err.message.toLowerCase();
-    if (msg.includes('email is not configured') || msg.includes('not configured')) {
+    if (
+      msg.includes('email is not configured') ||
+      (msg.includes('smtp') && msg.includes('not configured'))
+    ) {
       return { message: err.message, status: 503 };
     }
     if (msg.includes('email already registered') || msg.includes('phone number already registered'))
@@ -69,12 +79,18 @@ function authError(err: unknown): { message: string; status: number } {
       msg.includes('authentication failed') ||
       msg.includes('econnection') ||
       msg.includes('etimedout') ||
-      msg.includes('greeting never received')
+      msg.includes('greeting never received') ||
+      msg.includes('self signed') ||
+      msg.includes('certificate') ||
+      msg.includes('tls') ||
+      msg.includes('nodemailer')
     ) {
       return { message: `Email delivery failed: ${err.message}`, status: 503 };
     }
+    // Unmatched Error: surface message for debugging (e.g. Prisma edge cases, mail provider text)
+    return { message: err.message || 'Unexpected server error', status: 500 };
   }
-  return { message: 'Something went wrong. Please try again.', status: 400 };
+  return { message: 'Something went wrong. Please try again.', status: 500 };
 }
 
 export const signup = async (req: Request, res: Response) => {

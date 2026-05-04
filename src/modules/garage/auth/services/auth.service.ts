@@ -97,8 +97,13 @@ export class GarageAuthService {
   }
 
   async sendOtp(email: string) {
+    const t0 = Date.now();
+    const mark = (step: string) => console.log(`[garage-otp] ${step} +${Date.now() - t0}ms`);
+
+    mark('sendOtp start');
     const emailNorm = normalizeGarageEmail(email);
     const existingGarage = await prisma.garage.findUnique({ where: { email: emailNorm } });
+    mark('after prisma.garage.findUnique');
     if (existingGarage) {
       throw new Error('Email already registered');
     }
@@ -121,8 +126,10 @@ export class GarageAuthService {
         verifiedAt: null,
       },
     });
+    mark('after prisma.garageSignupOtp.upsert');
 
     await sendGarageSignupOtpEmail(emailNorm, code);
+    mark('after sendGarageSignupOtpEmail');
 
     return { message: 'OTP sent', expiresInMinutes: 10 };
   }
