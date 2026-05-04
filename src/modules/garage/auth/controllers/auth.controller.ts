@@ -6,6 +6,13 @@ import { extractGarageBusinessDocumentUrl } from '../../common/extract-business-
 const service = new GarageAuthService();
 
 function authError(err: unknown): { message: string; status: number } {
+  if (err instanceof Prisma.PrismaClientInitializationError) {
+    return {
+      message:
+        'Database connection failed. Check DATABASE_URL (and DIRECT_URL if used) on the server.',
+      status: 503,
+    };
+  }
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === 'P2002') {
       const target = (err.meta?.target as string[] | undefined)?.[0];
@@ -13,7 +20,6 @@ function authError(err: unknown): { message: string; status: number } {
       if (target === 'phone') return { message: 'Phone number already registered', status: 409 };
       return { message: 'A record with this value already exists', status: 409 };
     }
-    // Table/column missing — migrations not applied on this database
     if (err.code === 'P2021' || err.code === 'P2022') {
       return {
         message:
@@ -21,6 +27,24 @@ function authError(err: unknown): { message: string; status: number } {
         status: 503,
       };
     }
+    // Reachability / pool / timeout (common on cold Render + Supabase pooler)
+    if (['P1001', 'P1002', 'P1008', 'P1017', 'P2024'].includes(err.code)) {
+      return {
+        message: `Database temporarily unavailable (${err.code}). Retry in a few seconds.`,
+        status: 503,
+      };
+    }
+    // Any other Prisma request error — do not fall through to generic 400
+    return {
+      message: `Database error (${err.code}). Run migrations (npx prisma migrate deploy) or check server logs.`,
+      status: 503,
+    };
+  }
+  if (err instanceof Prisma.PrismaClientValidationError) {
+    return {
+      message: 'Invalid data sent to the database. Check server logs.',
+      status: 500,
+    };
   }
   if (err instanceof Error) {
     const msg = err.message.toLowerCase();
@@ -141,7 +165,7 @@ export const sendOtp = async (req: Request, res: Response) => {
     const result = await service.sendOtp(email);
     res.json(result);
   } catch (err: unknown) {
-    console.error('[garages/auth/send-otp]', err);
+    console.error('[garage-auth][send-otp]', err);
     const { message, status } = authError(err);
     return res.status(status).json({ error: message });
   }
