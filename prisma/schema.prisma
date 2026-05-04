@@ -45,6 +45,8 @@ model Driver {
   email        String        @unique
   phone        String        @unique
   password     String
+  isPhoneVerified Boolean    @default(false)
+  isEmailVerified Boolean    @default(false)
   status       AccountStatus @default(ACTIVE)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -97,6 +99,8 @@ model Garage {
   email            String                @unique
   phone            String                @unique
   password         String
+  isPhoneVerified Boolean               @default(false)
+  isEmailVerified Boolean               @default(false)
   status           AccountStatus         @default(PENDING)
   address          String?
   latitude         Float?
@@ -111,6 +115,17 @@ model Garage {
   notifications    GarageNotification[]
   setting          GarageSetting?
   ratings          GarageRating[]
+}
+
+/// Email OTP for garage signup (before a Garage row exists). One row per email.
+model GarageSignupOtp {
+  id         String    @id @default(uuid())
+  email      String    @unique
+  codeHash   String
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }
 
 model GarageNotification {
