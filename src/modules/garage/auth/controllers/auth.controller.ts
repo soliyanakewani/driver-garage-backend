@@ -6,6 +6,15 @@ import { extractGarageBusinessDocumentUrl } from '../../common/extract-business-
 
 const service = new GarageAuthService();
 
+/** Duck-typing: `instanceof MailSendError` can fail if the class is loaded twice; message prefix is stable. */
+function isGarageMailFailure(err: unknown): err is Error {
+  return (
+    err instanceof MailSendError ||
+    (err instanceof Error &&
+      (err.name === 'MailSendError' || err.message.startsWith('Email delivery failed:')))
+  );
+}
+
 function authError(err: unknown): { message: string; status: number } {
   if (err instanceof Prisma.PrismaClientInitializationError) {
     return {
@@ -54,7 +63,7 @@ function authError(err: unknown): { message: string; status: number } {
       status: 503,
     };
   }
-  if (err instanceof MailSendError) {
+  if (isGarageMailFailure(err)) {
     return { message: err.message, status: 503 };
   }
   if (err instanceof Error) {
@@ -98,8 +107,9 @@ function authError(err: unknown): { message: string; status: number } {
     ) {
       return { message: `Email delivery failed: ${err.message}`, status: 503 };
     }
-    // Unmatched Error: surface message for debugging (e.g. Prisma edge cases, mail provider text)
-    return { message: err.message || 'Unexpected server error', status: 500 };
+    // Unmatched Error: use class name when message is empty (some libs throw Error with no message)
+    const fallback = err.message.trim() || err.name || 'Unexpected server error';
+    return { message: fallback, status: 500 };
   }
   return { message: 'Something went wrong. Please try again.', status: 500 };
 }
@@ -194,7 +204,22 @@ export const sendOtp = async (req: Request, res: Response) => {
   } catch (err: unknown) {
     console.error('[garage-auth][send-otp]', err);
     const { message, status } = authError(err);
-    return res.status(status).json({ error: message });
+    const kind =
+      err instanceof Prisma.PrismaClientKnownRequestError
+        ? `Prisma:${err.code}`
+        : err instanceof Error
+          ? err.constructor.name
+          : typeof err;
+    const prismaMeta =
+      process.env.EXPOSE_SEND_OTP_DEBUG === 'true' &&
+      err instanceof Prisma.PrismaClientKnownRequestError
+        ? { prismaCode: err.code, meta: err.meta }
+        : undefined;
+    return res.status(status).json({
+      error: message,
+      ...(status >= 400 && { kind }),
+      ...prismaMeta,
+    });
   }
 };
 
