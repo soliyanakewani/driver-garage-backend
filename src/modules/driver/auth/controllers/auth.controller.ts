@@ -61,7 +61,7 @@ export const firebaseSignIn = async (req: Request, res: Response) => {
     ) {
       return res.status(401).json({ error: msg });
     }
-    if (lower.includes('already registered') || lower.includes('does not match')) {
+    if (lower.includes('already registered')) {
       return res.status(409).json({ error: msg });
     }
     return res.status(400).json({ error: msg });

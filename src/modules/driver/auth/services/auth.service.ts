@@ -72,12 +72,22 @@ export class DriverAuthService {
       if (!sameNumber(driverByPhone.phone)) {
         throw new Error('Invalid credentials');
       }
+      // Phone is proven by Firebase; allow the app email to differ from the stored row
+      // (e.g. user edits email on the form) unless that email belongs to another driver.
       if (driverByPhone.email.toLowerCase() !== email) {
-        throw new Error('Email does not match this phone account');
+        const other = await prisma.driver.findUnique({ where: { email } });
+        if (other && other.id !== driverByPhone.id) {
+          throw new Error('Email already registered');
+        }
       }
       const updated = await prisma.driver.update({
         where: { id: driverByPhone.id },
-        data: { isPhoneVerified: true },
+        data: {
+          isPhoneVerified: true,
+          firstName: input.firstName.trim(),
+          lastName: input.lastName.trim(),
+          ...(driverByPhone.email.toLowerCase() !== email ? { email } : {}),
+        },
       });
       const token = jwt.sign(
         { id: updated.id, role: 'DRIVER' },
