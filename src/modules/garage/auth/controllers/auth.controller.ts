@@ -72,18 +72,25 @@ function authError(err: unknown): { message: string; status: number } {
       msg.includes('email verification expired')
     )
       return { message: err.message, status: 400 };
-    // SMTP / relay failures from nodemailer
+    // SMTP / relay failures from nodemailer (Brevo often uses 535 / "not accepted" without the phrases below)
     if (
       msg.includes('eauth') ||
       msg.includes('invalid login') ||
       msg.includes('authentication failed') ||
+      msg.includes('not accepted') ||
+      msg.includes('username and password') ||
+      msg.includes('badcredentials') ||
       msg.includes('econnection') ||
       msg.includes('etimedout') ||
       msg.includes('greeting never received') ||
       msg.includes('self signed') ||
       msg.includes('certificate') ||
       msg.includes('tls') ||
-      msg.includes('nodemailer')
+      msg.includes('nodemailer') ||
+      /\b5\d\d\b/.test(msg) ||
+      msg.includes('5.7.') ||
+      msg.includes('connection closed') ||
+      msg.includes('socket hang up')
     ) {
       return { message: `Email delivery failed: ${err.message}`, status: 503 };
     }
