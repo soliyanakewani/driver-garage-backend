@@ -1,12 +1,19 @@
 import nodemailer from 'nodemailer';
 
+/** Strip accidental line breaks (common when pasting secrets into Render multiline fields). */
+function smtpEnv(key: 'SMTP_HOST' | 'SMTP_PORT' | 'SMTP_USER' | 'SMTP_PASS' | 'MAIL_FROM'): string {
+  const v = process.env[key];
+  if (v == null) return '';
+  return v.replace(/\r?\n/g, '').trim();
+}
+
 function smtpConfigured(): boolean {
   return Boolean(
-    process.env.SMTP_HOST?.trim() &&
-      process.env.SMTP_PORT?.trim() &&
-      process.env.SMTP_USER?.trim() &&
-      process.env.SMTP_PASS?.trim() &&
-      process.env.MAIL_FROM?.trim()
+    smtpEnv('SMTP_HOST') &&
+      smtpEnv('SMTP_PORT') &&
+      smtpEnv('SMTP_USER') &&
+      smtpEnv('SMTP_PASS') &&
+      smtpEnv('MAIL_FROM')
   );
 }
 
@@ -24,21 +31,27 @@ export async function sendGarageSignupOtpEmail(to: string, code: string): Promis
     return;
   }
 
-  const port = Number(process.env.SMTP_PORT);
+  const port = Number(smtpEnv('SMTP_PORT'));
+  const host = smtpEnv('SMTP_HOST');
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
+    host,
     port: Number.isFinite(port) ? port : 587,
     secure: port === 465,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: smtpEnv('SMTP_USER'),
+      pass: smtpEnv('SMTP_PASS'),
     },
+    connectionTimeout: 15_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 25_000,
   });
 
+  console.log('[garage-otp] smtp sendMail start');
   await transporter.sendMail({
-    from: process.env.MAIL_FROM,
+    from: smtpEnv('MAIL_FROM'),
     to,
     subject,
     text,
   });
+  console.log('[garage-otp] smtp sendMail done');
 }
