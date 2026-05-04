@@ -8,11 +8,19 @@ const service = new GarageAuthService();
 function authError(err: unknown): { message: string; status: number } {
   if (err instanceof Error) {
     const msg = err.message.toLowerCase();
+    if (msg.includes('email is not configured') || msg.includes('not configured')) {
+      return { message: err.message, status: 503 };
+    }
     if (msg.includes('email already registered') || msg.includes('phone number already registered'))
       return { message: err.message, status: 409 };
     if (msg.includes('invalid credentials') || msg.includes('invalid or expired otp') || msg.includes('invalid otp'))
       return { message: err.message, status: 401 };
-    if (msg.includes('otp expired') || msg.includes('no garage found'))
+    if (
+      msg.includes('otp expired') ||
+      msg.includes('no garage found') ||
+      msg.includes('email not verified') ||
+      msg.includes('email verification expired')
+    )
       return { message: err.message, status: 400 };
   }
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -76,7 +84,7 @@ export const signup = async (req: Request, res: Response) => {
     }
 
     const businessDocumentUrl = extractGarageBusinessDocumentUrl(req);
-    const garage = await service.signup(
+    const { token, garage } = await service.signup(
       name,
       email,
       String(phone),
@@ -86,7 +94,7 @@ export const signup = async (req: Request, res: Response) => {
       businessDocumentUrl
     );
     const { password: _pw, ...safe } = garage as { password: string; [k: string]: unknown };
-    res.status(201).json(safe);
+    res.status(201).json({ token, garage: safe });
   } catch (err: unknown) {
     const { message, status } = authError(err);
     return res.status(status).json({ error: message });
@@ -110,11 +118,8 @@ export const login = async (req: Request, res: Response) => {
 
 export const sendOtp = async (req: Request, res: Response) => {
   try {
-    const { email } = req.body;
-    if (!email || typeof email !== 'string') {
-      return res.status(400).json({ error: 'Email is required' });
-    }
-    const result = await service.sendOtp(email.trim());
+    const { email } = req.body as { email: string };
+    const result = await service.sendOtp(email);
     res.json(result);
   } catch (err: unknown) {
     const { message, status } = authError(err);
@@ -124,11 +129,8 @@ export const sendOtp = async (req: Request, res: Response) => {
 
 export const verifyOtp = async (req: Request, res: Response) => {
   try {
-    const { email, code } = req.body;
-    if (!email || typeof email !== 'string' || !code || typeof code !== 'string') {
-      return res.status(400).json({ error: 'Email and code are required' });
-    }
-    const result = await service.verifyOtp(email.trim(), code.trim());
+    const { email, code } = req.body as { email: string; code: string };
+    const result = await service.verifyOtp(email, code);
     res.json(result);
   } catch (err: unknown) {
     const { message, status } = authError(err);

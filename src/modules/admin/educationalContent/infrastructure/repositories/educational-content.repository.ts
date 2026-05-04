@@ -53,9 +53,14 @@ export class EducationContentRepositoryImpl
   }
 
   async findAll(category?: EducationCategory): Promise<EducationContent[]> {
+    const orderBy =
+      category === EducationCategory.MANUALS
+        ? ({ title: 'asc' } as const)
+        : ({ createdAt: 'desc' } as const);
+
     const records = await prisma.educationContent.findMany({
       where: category ? { category } : undefined,
-      orderBy: { createdAt: 'desc' },
+      orderBy,
     });
 
     return records.map(EducationContentPrismaMapper.toDomain);
