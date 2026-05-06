@@ -18,4 +18,17 @@ export class AdminAuthService {
 
     return { token, admin };
   }
+
+  async changePassword(adminId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const admin = await prisma.admin.findUnique({ where: { id: adminId } });
+    if (!admin) throw new Error('Admin not found');
+
+    const valid = await bcrypt.compare(currentPassword, admin.password);
+    if (!valid) throw new Error('Current password is incorrect');
+
+    if (newPassword.length < 6) throw new Error('New password must be at least 6 characters');
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.admin.update({ where: { id: adminId }, data: { password: hashed } });
+  }
 }
