@@ -1,6 +1,7 @@
 import { prisma } from '../../../../../infrastructure/prisma/prisma.client';
 import bcrypt from 'bcrypt';
 import type { IGarageProfileRepository, GarageProfileUpdateData } from '../../domain/repositories/garage-profile.repository.interface';
+import { notifyAllAdmins } from '../../../../admin/notifications/admin-notification.service';
 
 const profileSelect = {
   id: true,
@@ -95,6 +96,18 @@ export class PrismaGarageProfileRepository implements IGarageProfileRepository {
         },
       },
     });
+
+    const hadDocument = Boolean(existing.businessDocumentUrl?.trim());
+    const hasDocumentNow = Boolean(updated.businessDocumentUrl?.trim());
+    const documentChanged =
+      updateData.businessDocumentUrl !== undefined &&
+      String(existing.businessDocumentUrl ?? '') !== String(updated.businessDocumentUrl ?? '');
+    if (hasDocumentNow && (!hadDocument || documentChanged)) {
+      await notifyAllAdmins(
+        'Garage document updated',
+        `Garage "${updated.name}" uploaded or updated a business document from profile settings.`
+      );
+    }
 
     const [aggregate, totalRatings] = await Promise.all([
       prisma.garageRating.aggregate({

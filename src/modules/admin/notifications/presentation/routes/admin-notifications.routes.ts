@@ -5,6 +5,9 @@ import { AdminNotificationsController } from '../controllers/admin-notifications
 const router = Router();
 router.use(adminAuthGuard);
 
+router.get('/', AdminNotificationsController.list);
+router.patch('/:id/read', AdminNotificationsController.markRead);
+router.patch('/read-all', AdminNotificationsController.markAllRead);
 router.post('/broadcast', AdminNotificationsController.broadcast);
 
 export default router;

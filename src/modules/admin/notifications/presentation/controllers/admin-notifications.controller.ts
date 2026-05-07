@@ -10,6 +10,73 @@ function normalizeTarget(value: unknown): BroadcastTarget {
 }
 
 export class AdminNotificationsController {
+  static async list(req: Request, res: Response) {
+    try {
+      const adminId = (req as any).admin?.id as string | undefined;
+      if (!adminId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const notifications = await prisma.adminNotification.findMany({
+        where: { adminId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      res.json(notifications);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  }
+
+  static async markRead(req: Request, res: Response) {
+    try {
+      const adminId = (req as any).admin?.id as string | undefined;
+      if (!adminId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const id = String(req.params.id ?? '').trim();
+      if (!id) {
+        res.status(400).json({ error: 'notification id is required' });
+        return;
+      }
+
+      const updated = await prisma.adminNotification.updateMany({
+        where: { id, adminId },
+        data: { read: true },
+      });
+      if (updated.count === 0) {
+        res.status(404).json({ error: 'Notification not found' });
+        return;
+      }
+
+      res.json({ message: 'Notification marked as read' });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  }
+
+  static async markAllRead(req: Request, res: Response) {
+    try {
+      const adminId = (req as any).admin?.id as string | undefined;
+      if (!adminId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const result = await prisma.adminNotification.updateMany({
+        where: { adminId, read: false },
+        data: { read: true },
+      });
+
+      res.json({ message: 'All notifications marked as read', updatedCount: result.count });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  }
+
   static async broadcast(req: Request, res: Response) {
     try {
       const title = String(req.body.title ?? '').trim();

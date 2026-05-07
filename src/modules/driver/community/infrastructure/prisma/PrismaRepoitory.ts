@@ -2,6 +2,7 @@ import { PrismaClient, Prisma } from "@prisma/client";
 import type { PostFeedFilter } from "../../application/dtos/GetPostsDto";
 import { PostRepository } from "../../domain/repositories/PostRepository";
 import { PostCommentView, PostFeedItem } from "../../domain/types/Post";
+import { notifyAllAdmins } from "../../../../admin/notifications/admin-notification.service";
 
 const prisma = new PrismaClient();
 
@@ -280,6 +281,11 @@ export class PrismaPostRepository implements PostRepository {
                 status: "PENDING",
             },
         });
+
+        await notifyAllAdmins(
+            "New community report submitted",
+            `A community post report was submitted with reason "${reason}". Please review it in the admin reports panel.`
+        );
 
         return {
             id: report.id,
