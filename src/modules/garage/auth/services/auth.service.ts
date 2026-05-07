@@ -2,6 +2,7 @@ import { prisma, type AppPrismaClient } from '../../../../infrastructure/prisma/
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { sendGarageSignupOtpEmail } from '../../../../infrastructure/email/send-otp-email';
+import { notifyAllAdmins } from '../../../admin/notifications/admin-notification.service';
 
 const OTP_TTL_MS = 10 * 60 * 1000;
 const VERIFIED_SIGNUP_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -76,6 +77,13 @@ export class GarageAuthService {
     });
 
     const token = jwt.sign({ id: garage.id, role: 'GARAGE' }, process.env.JWT_SECRET!, { expiresIn: '1h' });
+
+    if (garage.businessDocumentUrl) {
+      await notifyAllAdmins(
+        'New garage document uploaded',
+        `Garage "${garage.name}" uploaded a business document during signup and may require admin review.`
+      );
+    }
 
     return { token, garage };
   }
