@@ -1,7 +1,7 @@
 import { prisma } from '../../../../../infrastructure/prisma/prisma.client';
 import bcrypt from 'bcrypt';
 import type { IGarageProfileRepository, GarageProfileUpdateData } from '../../domain/repositories/garage-profile.repository.interface';
-import { notifyAllAdmins } from '../../../../admin/notifications/admin-notification.service';
+import { notifyAllAdmins } from '../../../../admin/notifications/application/services/notify-all-admins.service';
 
 const profileSelect = {
   id: true,
