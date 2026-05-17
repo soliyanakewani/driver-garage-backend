@@ -2,7 +2,7 @@ import { PrismaClient, Prisma } from "@prisma/client";
 import type { PostFeedFilter } from "../../application/dtos/GetPostsDto";
 import { PostRepository } from "../../domain/repositories/PostRepository";
 import { PostCommentView, PostFeedItem } from "../../domain/types/Post";
-import { notifyAllAdmins } from "../../../../admin/notifications/admin-notification.service";
+import { notifyAllAdmins } from "../../../../admin/notifications/application/services/notify-all-admins.service";
 
 const prisma = new PrismaClient();
 
